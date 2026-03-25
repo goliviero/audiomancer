@@ -127,6 +127,30 @@ def chain(signal: np.ndarray, effects: list,
 
 
 # ---------------------------------------------------------------------------
+# Preset effects
+# ---------------------------------------------------------------------------
+
+def reverb_hall(signal: np.ndarray, sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Large hall reverb preset."""
+    return reverb(signal, room_size=0.9, damping=0.5, wet_level=0.7, sample_rate=sample_rate)
+
+
+def reverb_cathedral(signal: np.ndarray, sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Massive cathedral reverb — long tail, heavy wet."""
+    return reverb(signal, room_size=1.0, damping=0.3, wet_level=0.85, sample_rate=sample_rate)
+
+
+def delay_long(signal: np.ndarray, sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Long delay preset (500ms, moderate feedback)."""
+    return delay(signal, delay_seconds=0.5, feedback=0.4, mix=0.3, sample_rate=sample_rate)
+
+
+def chorus_subtle(signal: np.ndarray, sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Subtle chorus for width and movement."""
+    return chorus(signal, rate_hz=0.5, depth=0.15, mix=0.3, sample_rate=sample_rate)
+
+
+# ---------------------------------------------------------------------------
 # Internal
 # ---------------------------------------------------------------------------
 

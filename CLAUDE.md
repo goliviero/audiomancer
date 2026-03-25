@@ -10,6 +10,9 @@ Minimal Python audio scripts for ambient sound design.
 Collection of disposable scripts for generating binaural beats, drones, pads,
 and processing field recordings. Not a DAW, not a framework.
 
+**Active production use**: generating audio for Akasha Portal v003.
+Script `scripts/06_akasha_v003.py` produces 30 min of ambient meditation audio.
+
 ---
 
 ## Tech Stack
@@ -30,24 +33,23 @@ audiomancer/
 ├── pyproject.toml
 ├── audiomancer/
 │   ├── __init__.py          # SAMPLE_RATE, DEFAULT_AMPLITUDE constants
-│   ├── synth.py             # Waveforms, drones, pads
-│   ├── binaural.py          # Binaural beats + layered variants
+│   ├── synth.py             # Waveforms, drones, pads, noise
+│   ├── binaural.py          # Binaural beats + presets
 │   ├── effects.py           # Scipy filters + pedalboard wrappers
-│   ├── layers.py            # Mixing, layering, crossfade
+│   ├── layers.py            # Mixing, layering, crossfade, LUFS normalization
+│   ├── field.py             # Field recording processing
 │   └── utils.py             # I/O, normalize, fade, signal helpers
 ├── scripts/
-│   ├── make_binaural.py     # Generate binaural beat
-│   ├── drone_pad.py         # Create ambient drone pad
-│   ├── process_field.py     # Process field recordings
-│   └── layer_stems.py       # Layer multiple audio stems
-├── tests/
-│   ├── test_synth.py        # Waveform + drone + pad tests (13 tests)
-│   ├── test_binaural.py     # Binaural + constants tests (8 tests)
-│   ├── test_effects.py      # Filter tests (3 tests)
-│   ├── test_layers.py       # Mix + layer + crossfade tests (8 tests)
-│   └── test_utils.py        # Signal helpers + I/O tests (12 tests)
-├── _fractal_backup/         # Full backup of original Fractal audio code
-└── output/                  # Generated audio (gitignored)
+│   ├── 01_binaural_432hz.py   # 10-min binaural beat
+│   ├── 02_drone_pad.py        # Ambient drone pad
+│   ├── 03_piano_reverb.py     # WAV + cathedral reverb
+│   ├── 04_field_processing.py # Field recording cleanup
+│   ├── 05_layer_akasha.py     # 5-min preview mix
+│   └── 06_akasha_v003.py      # PRODUCTION: 30-min Akasha Portal audio
+├── tests/                     # 70 pytest tests
+├── samples/                   # Source samples (gitignored audio)
+├── output/                    # Generated audio (gitignored)
+└── _fractal_backup/           # Full backup of original Fractal audio code
 ```
 
 ---
@@ -55,11 +57,12 @@ audiomancer/
 ## Commands
 
 ```bash
-python -m pytest tests/ -v                          # run all tests (44)
-python scripts/make_binaural.py                     # binaural beat
-python scripts/drone_pad.py                         # ambient drone
-python scripts/process_field.py input.wav           # process recording
-python scripts/layer_stems.py a.wav b.wav -o out.wav  # layer stems
+python -m pytest tests/ -v                          # run all tests (70)
+python scripts/06_akasha_v003.py                    # PRODUCTION: Akasha v003 audio
+python scripts/01_binaural_432hz.py                 # binaural beat
+python scripts/02_drone_pad.py                      # ambient drone
+python scripts/04_field_processing.py input.wav     # process recording
+python scripts/05_layer_akasha.py                   # 5-min preview
 ```
 
 ---

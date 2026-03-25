@@ -78,6 +78,41 @@ def pink_noise(duration_sec: float, amplitude: float = DEFAULT_AMPLITUDE,
     return pink
 
 
+def brown_noise(duration_sec: float, amplitude: float = DEFAULT_AMPLITUDE,
+                sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Generate mono brown (Brownian) noise via cumulative sum of white noise."""
+    n = int(sample_rate * duration_sec)
+    rng = np.random.default_rng()
+    white = rng.standard_normal(n)
+    brown = np.cumsum(white)
+    peak = np.max(np.abs(brown))
+    if peak > 0:
+        brown = amplitude * (brown / peak)
+    return brown
+
+
+def noise(color: str = "pink", duration_sec: float = 60.0,
+          amplitude: float = DEFAULT_AMPLITUDE,
+          sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Generate colored noise.
+
+    Args:
+        color: 'white', 'pink', or 'brown'.
+        duration_sec: Duration in seconds.
+        amplitude: Peak amplitude.
+        sample_rate: Sample rate in Hz.
+    """
+    generators = {
+        "white": white_noise,
+        "pink": pink_noise,
+        "brown": brown_noise,
+    }
+    gen = generators.get(color)
+    if gen is None:
+        raise ValueError(f"Unknown noise color: {color!r}. Use 'white', 'pink', or 'brown'.")
+    return gen(duration_sec, amplitude=amplitude, sample_rate=sample_rate)
+
+
 # ---------------------------------------------------------------------------
 # Drone / Pad helpers
 # ---------------------------------------------------------------------------
@@ -145,6 +180,38 @@ def pad(frequency: float, duration_sec: float,
         signal += sawtooth(freq, duration_sec, amplitude=1.0, sample_rate=sample_rate)
 
     # Normalize
+    peak = np.max(np.abs(signal))
+    if peak > 0:
+        signal = amplitude * signal / peak
+    return signal
+
+
+def chord_pad(frequencies: list[float], duration_sec: float,
+              voices: int = 3, detune_cents: float = 8.0,
+              amplitude: float = DEFAULT_AMPLITUDE,
+              sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Generate a held chord with detuned voices per note.
+
+    Args:
+        frequencies: List of frequencies forming the chord (e.g., [261.63, 329.63, 392.0]).
+        duration_sec: Duration in seconds.
+        voices: Detuned voices per note.
+        detune_cents: Detune spread in cents.
+        amplitude: Peak amplitude.
+        sample_rate: Sample rate in Hz.
+
+    Returns:
+        Mono signal.
+    """
+    t = _time_axis(duration_sec, sample_rate)
+    signal = np.zeros_like(t)
+    offsets = np.linspace(-detune_cents / 2, detune_cents / 2, voices)
+
+    for freq in frequencies:
+        for offset in offsets:
+            detuned = freq * 2 ** (offset / 1200)
+            signal += np.sin(2 * np.pi * detuned * t)
+
     peak = np.max(np.abs(signal))
     if peak > 0:
         signal = amplitude * signal / peak

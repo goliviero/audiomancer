@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from audiomancer.binaural import binaural, binaural_layered, BANDS, CARRIERS
+from audiomancer.binaural import binaural, binaural_layered, from_preset, BANDS, CARRIERS, PRESETS
 
 SR = 44100
 
@@ -45,3 +45,18 @@ class TestConstants:
     def test_carriers_exist(self):
         assert "schumann" in CARRIERS
         assert CARRIERS["schumann"] == pytest.approx(7.83)
+
+
+class TestPresets:
+    def test_presets_dict(self):
+        assert "theta_deep" in PRESETS
+        assert "om_theta" in PRESETS
+        assert PRESETS["theta_deep"]["beat"] == 4.0
+
+    def test_from_preset(self):
+        sig = from_preset("theta_deep", 1.0, sample_rate=SR)
+        assert sig.shape == (SR, 2)
+
+    def test_from_preset_invalid(self):
+        with pytest.raises(ValueError, match="Unknown preset"):
+            from_preset("nonexistent", 1.0)

@@ -29,6 +29,37 @@ CARRIERS = {
 }
 
 
+# Meditation presets: (carrier_hz, beat_hz)
+PRESETS = {
+    "theta_deep":     {"carrier": 200.0, "beat": 4.0},     # Deep meditation
+    "alpha_relax":    {"carrier": 200.0, "beat": 10.0},    # Relaxation
+    "delta_sleep":    {"carrier": 100.0, "beat": 2.0},     # Deep sleep
+    "solfeggio_528":  {"carrier": 528.0, "beat": 4.0},     # "Love frequency"
+    "solfeggio_432":  {"carrier": 432.0, "beat": 6.0},     # Natural tuning
+    "om_theta":       {"carrier": 136.1, "beat": 4.0},     # Om + theta
+}
+
+
+def from_preset(name: str, duration_sec: float,
+                amplitude: float = DEFAULT_AMPLITUDE,
+                sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Generate a binaural beat from a named preset.
+
+    Args:
+        name: Preset name (see PRESETS dict).
+        duration_sec: Duration in seconds.
+
+    Returns:
+        Stereo signal as (n_samples, 2).
+    """
+    preset = PRESETS.get(name)
+    if preset is None:
+        available = ", ".join(PRESETS.keys())
+        raise ValueError(f"Unknown preset: {name!r}. Available: {available}")
+    return binaural(preset["carrier"], preset["beat"], duration_sec,
+                    amplitude=amplitude, sample_rate=sample_rate)
+
+
 def binaural(carrier_hz: float, beat_hz: float, duration_sec: float,
              amplitude: float = DEFAULT_AMPLITUDE,
              sample_rate: int = SAMPLE_RATE) -> np.ndarray:
@@ -75,8 +106,6 @@ def binaural_layered(carrier_hz: float, beat_hz: float, duration_sec: float,
                            sample_rate=sample_rate)
 
     # Pink noise bed (stereo)
-    n = int(sample_rate * duration_sec)
-    rng = np.random.default_rng(42)
     noise_l = pink_noise(duration_sec, amplitude=amplitude * pink_amount,
                          sample_rate=sample_rate)
     noise_r = pink_noise(duration_sec, amplitude=amplitude * pink_amount,

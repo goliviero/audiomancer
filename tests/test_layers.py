@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from audiomancer.layers import mix, layer_at_offset, crossfade
+from audiomancer.layers import mix, layer_at_offset, crossfade, layer, loop_seamless, normalize_lufs
 
 SR = 44100
 
@@ -66,3 +66,43 @@ class TestCrossfade:
         xf_start = SR - int(SR * 0.5)
         mid = xf_start + int(SR * 0.25)
         assert result[mid] == pytest.approx(0.5, abs=0.05)
+
+
+class TestLayer:
+    def test_layer_linear_volumes(self):
+        a = np.ones(100)
+        b = np.ones(100)
+        result = layer([a, b], volumes=[0.5, 0.5])
+        # 0.5 + 0.5 = 1.0
+        np.testing.assert_allclose(result, np.ones(100), atol=0.01)
+
+    def test_layer_default_volumes(self):
+        a = np.ones(100)
+        result = layer([a])
+        np.testing.assert_allclose(result, np.ones(100), atol=0.01)
+
+
+class TestLoopSeamless:
+    def test_loop_extends(self):
+        sig = np.ones(SR)  # 1 second
+        result = loop_seamless(sig, 3.0, crossfade_sec=0.5, sample_rate=SR)
+        assert len(result) == SR * 3
+
+    def test_loop_already_long_enough(self):
+        sig = np.ones(SR * 5)
+        result = loop_seamless(sig, 3.0, sample_rate=SR)
+        assert len(result) == SR * 3
+
+
+class TestNormalizeLufs:
+    def test_normalize_changes_level(self):
+        sig = np.ones(SR) * 0.001  # Very quiet
+        result = normalize_lufs(sig, target_lufs=-14.0)
+        rms_out = np.sqrt(np.mean(result ** 2))
+        lufs_out = 20 * np.log10(rms_out)
+        assert lufs_out == pytest.approx(-14.0, abs=1.0)
+
+    def test_normalize_silent(self):
+        sig = np.zeros(SR)
+        result = normalize_lufs(sig, target_lufs=-14.0)
+        np.testing.assert_allclose(result, sig)

@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 from audiomancer.synth import (
-    sine, square, sawtooth, triangle, white_noise, pink_noise, drone, pad,
+    sine, square, sawtooth, triangle, white_noise, pink_noise, brown_noise,
+    noise, drone, pad, chord_pad,
 )
 
 SR = 44100
@@ -70,3 +71,39 @@ class TestPad:
     def test_pad_amplitude(self):
         sig = pad(220.0, 1.0, amplitude=0.7, sample_rate=SR)
         assert np.max(np.abs(sig)) == pytest.approx(0.7, abs=0.01)
+
+
+class TestNoise:
+    def test_brown_noise_shape(self):
+        sig = brown_noise(1.0, sample_rate=SR)
+        assert sig.shape == (SR,)
+
+    def test_noise_dispatcher_white(self):
+        sig = noise("white", 1.0, sample_rate=SR)
+        assert sig.shape == (SR,)
+
+    def test_noise_dispatcher_pink(self):
+        sig = noise("pink", 1.0, sample_rate=SR)
+        assert sig.shape == (SR,)
+
+    def test_noise_dispatcher_brown(self):
+        sig = noise("brown", 1.0, sample_rate=SR)
+        assert sig.shape == (SR,)
+
+    def test_noise_invalid_color(self):
+        with pytest.raises(ValueError, match="Unknown noise color"):
+            noise("blue", 1.0)
+
+
+class TestChordPad:
+    def test_chord_pad_shape(self):
+        sig = chord_pad([261.63, 329.63, 392.0], 2.0, sample_rate=SR)
+        assert sig.shape == (SR * 2,)
+
+    def test_chord_pad_amplitude(self):
+        sig = chord_pad([261.63, 329.63, 392.0], 1.0, amplitude=0.6, sample_rate=SR)
+        assert np.max(np.abs(sig)) == pytest.approx(0.6, abs=0.01)
+
+    def test_chord_pad_single_note(self):
+        sig = chord_pad([440.0], 1.0, voices=1, sample_rate=SR)
+        assert sig.shape == (SR,)

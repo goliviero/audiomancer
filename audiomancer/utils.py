@@ -113,3 +113,22 @@ def load_audio(path: str | Path) -> tuple[np.ndarray, int]:
     """Load an audio file. Returns (signal, sample_rate)."""
     data, sr = sf.read(str(path), dtype="float64")
     return data, sr
+
+
+def trim_silence(signal: np.ndarray, threshold_db: float = -60.0,
+                 sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Trim leading and trailing silence below threshold."""
+    threshold_linear = 10 ** (threshold_db / 20)
+    if signal.ndim == 2:
+        envelope = np.max(np.abs(signal), axis=1)
+    else:
+        envelope = np.abs(signal)
+    above = np.where(envelope > threshold_linear)[0]
+    if len(above) == 0:
+        return signal[:0]
+    return signal[above[0]:above[-1] + 1]
+
+
+def duration(signal: np.ndarray, sample_rate: int = SAMPLE_RATE) -> float:
+    """Return signal duration in seconds."""
+    return signal.shape[0] / sample_rate

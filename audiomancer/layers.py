@@ -122,3 +122,79 @@ def crossfade(signal_a: np.ndarray, signal_b: np.ndarray,
     crossfade_zone = a_xf * fade_out_ramp + b_xf * fade_in_ramp
 
     return np.concatenate([a_pre, crossfade_zone, b_post])
+
+
+def layer(stems: list[np.ndarray], volumes: list[float] | None = None) -> np.ndarray:
+    """Superpose multiple stems with linear volume control.
+
+    Like mix() but takes linear volumes (0.0–1.0) instead of dB.
+
+    Args:
+        stems: List of audio arrays.
+        volumes: Linear volume per stem. Defaults to 1.0 for all.
+
+    Returns:
+        Mixed signal (stereo if any input is stereo).
+    """
+    if not stems:
+        return np.array([], dtype=np.float64)
+    if volumes is None:
+        volumes = [1.0] * len(stems)
+    # Convert linear to dB for mix()
+    volumes_db = [20 * np.log10(max(v, 1e-10)) for v in volumes]
+    return mix(stems, volumes_db=volumes_db)
+
+
+def loop_seamless(audio: np.ndarray, total_duration_sec: float,
+                  crossfade_sec: float = 3.0,
+                  sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Loop audio seamlessly with crossfade at junctions.
+
+    Args:
+        audio: Source signal to loop.
+        total_duration_sec: Target duration in seconds.
+        crossfade_sec: Crossfade overlap at each junction.
+        sample_rate: Sample rate in Hz.
+
+    Returns:
+        Looped signal of approximately the target duration.
+    """
+    target_samples = int(sample_rate * total_duration_sec)
+
+    if len(audio) >= target_samples:
+        return audio[:target_samples]
+
+    result = audio.copy()
+    while len(result) < target_samples:
+        result = crossfade(result, audio.copy(), crossfade_sec=crossfade_sec,
+                           sample_rate=sample_rate)
+
+    return result[:target_samples]
+
+
+def normalize_lufs(signal: np.ndarray, target_lufs: float = -14.0) -> np.ndarray:
+    """Approximate LUFS normalization using RMS.
+
+    True LUFS (ITU-R BS.1770) requires K-weighted filtering and gating.
+    For continuous ambient audio, RMS is a close approximation.
+
+    Args:
+        signal: Input signal.
+        target_lufs: Target loudness (default -14 for YouTube).
+
+    Returns:
+        Normalized signal.
+    """
+    rms = np.sqrt(np.mean(signal ** 2))
+    if rms == 0:
+        return signal
+    current_lufs = 20 * np.log10(rms)
+    gain_db = target_lufs - current_lufs
+    gain_linear = 10 ** (gain_db / 20)
+    result = signal * gain_linear
+
+    # Safety: prevent digital clipping
+    peak = np.max(np.abs(result))
+    if peak > 1.0:
+        result = result / peak * 0.99
+    return result

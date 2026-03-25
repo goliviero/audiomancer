@@ -8,6 +8,7 @@ import tempfile
 from audiomancer.utils import (
     silence, normalize, fade_in, fade_out, concat, pad_to_length,
     mono_to_stereo, stereo_to_mono, export_wav, load_audio,
+    trim_silence, duration,
 )
 
 SR = 44100
@@ -84,3 +85,27 @@ class TestIO:
             loaded, sr = load_audio(path)
             assert sr == SR
             assert loaded.shape[0] == SR
+
+
+class TestTrimSilence:
+    def test_trims_leading_trailing(self):
+        sig = np.zeros(SR * 3)
+        sig[SR:SR * 2] = 0.5  # Sound in the middle second
+        trimmed = trim_silence(sig, threshold_db=-40.0)
+        assert len(trimmed) < len(sig)
+        assert len(trimmed) >= SR  # At least the loud part
+
+    def test_all_silence(self):
+        sig = np.zeros(100)
+        trimmed = trim_silence(sig, threshold_db=-40.0)
+        assert len(trimmed) == 0
+
+
+class TestDuration:
+    def test_mono(self):
+        sig = np.ones(SR * 2)
+        assert duration(sig, sample_rate=SR) == pytest.approx(2.0)
+
+    def test_stereo(self):
+        sig = np.ones((SR * 3, 2))
+        assert duration(sig, sample_rate=SR) == pytest.approx(3.0)

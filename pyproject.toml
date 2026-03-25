@@ -2,12 +2,17 @@
 name = "audiomancer"
 version = "0.1.0"
 description = "Minimal Python audio scripts for ambient sound design"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
-    "numpy",
-    "scipy",
-    "soundfile",
-    "pedalboard",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "soundfile>=0.12",
+    "pedalboard>=0.8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
 ]
 
 [tool.pytest.ini_options]
