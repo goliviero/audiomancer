@@ -20,6 +20,10 @@ audiomancer/
 │   │                        # Amplitude modulation, time-varying filter sweep
 │   ├── textures.py          # 9 ready-to-use evolving ambient presets (texture bank)
 │   │                        # Registry + generate() dispatcher
+│   ├── compose.py           # Temporal composition: fade_envelope (breakpoints),
+│   │                        # tremolo, stitch (sections + crossfade), make_loopable
+│   ├── quick.py             # One-liner API: q.drone, q.pad, q.binaural, q.texture, q.mix
+│   │                        # note() converter, FREQS dict, HARMONICS_* presets
 │   ├── field.py             # Field recording pipeline: clean, noise_gate, process_field
 │   └── utils.py             # I/O (WAV), normalize, fade_in/out, trim, mono/stereo, duration
 ├── scripts/
@@ -29,8 +33,10 @@ audiomancer/
 │   ├── 04_field_processing.py  # Field recording cleanup (CLI)
 │   ├── 05_layer_akasha.py      # 5-min preview mix (drone + binaural + pad)
 │   ├── 06_akasha_v003.py       # 30-min production: Om drone + theta + C major + pink noise
-│   └── 07_stems_v003.py        # 5-min loopable stems for Akasha V003
-├── tests/                      # 128 pytest tests
+│   ├── 07_stems_v003.py        # 5-min loopable stems for Akasha V003
+│   ├── 08_showcase.py          # 53 x 15s clips across 5 categories (audition tool)
+│   └── 09_progressive_stem.py  # 5-min progressive loopable stem with sections
+├── tests/                      # 151 pytest tests
 ├── samples/                    # Source audio (gitignored)
 ├── output/                     # Generated WAV (gitignored)
 └── _fractal_backup/            # Archived Fractal audio code (18 modules)
@@ -66,15 +72,21 @@ Synthesis (synth.py)          Processing (effects.py)
       Amplitude mod, filter sweep
          │
          ▼
-    Textures (textures.py)         Layering (layers.py)
-      9 presets combining             mix / layer (volume control)
-      synth + mod + effects           crossfade / loop_seamless
-      generate("deep_space", 300)     normalize_lufs (-14 dB YouTube)
-         │                              │
-         ▼                              ▼
-    Export (utils.py)
-      export_wav (16/24/32-bit)
-      → output/*.wav
+    Textures (textures.py)         Compose (compose.py)
+      9 presets combining             fade_envelope (breakpoints)
+      synth + mod + effects           tremolo (slow LFO)
+      generate("deep_space", 300)     stitch (sections + crossfade)
+         │                            make_loopable (loop seal)
+         ▼                              │
+    Layering (layers.py)               │
+      mix / layer (volume control)  ←──┘
+      crossfade / loop_seamless
+      normalize_lufs (-14 dB YouTube)
+         │
+         ▼
+    quick.py (one-liner API)       Export (utils.py)
+      q.drone / q.pad / q.mix   →  export_wav (16/24/32-bit)
+      q.texture / q.binaural        → output/*.wav
 ```
 
 ---
@@ -99,11 +111,13 @@ Audiomancer generates WAV stems → placed in `akasha-portal/sounds/processed/` 
 
 ## Current State
 
-- **v0.2.0** — 8 modules, 7 scripts, 128 tests
-- Production script (06) generates 30 min ambient audio
-- V003 stem generator (07) produces 5-min loopable stems
+- **v0.3.0** — 10 modules, 9 scripts, 151 tests
 - Modulation system: LFO, Brownian drift, evolving LFO
-- Texture bank: 9 evolving presets (evolving_drone, breathing_pad, deep_space, ocean_bed, crystal_shimmer, earth_hum, ethereal_wash, singing_bowl, noise_wash)
+- Texture bank: 9 evolving presets
+- Composition layer: fade_envelope, tremolo, stitch, make_loopable
+- Progressive stems: 5-min loopable arc (awakening → deepening → fullness → return)
+- one-liner API: quick.py + FREQS dict + note() converter
+- Showcase: 53 audition clips in output/showcase/
 
 ---
 
@@ -123,8 +137,21 @@ Audiomancer generates WAV stems → placed in `akasha-portal/sounds/processed/` 
 
 ---
 
+## Progressive Stem Structure (09_progressive_stem.py)
+
+```
+0:00 – 1:30  AWAKENING  Drone alone, filter closed (800 Hz), volume 0.25
+1:30 – 3:00  DEEPENING  Pad enters, filter opens (→ 2500 Hz), tremolo 0.15 Hz
+3:00 – 4:00  FULLNESS   Drone + pad + noise_wash, peak density
+4:00 – 5:00  RETURN     Texture exits, pad fades, filter closes, volume → 0.25
+Loop seal: 5s crossfade on loop point via make_loopable()
+```
+
+Change `FREQ` at the top to swap: 111.0 (Holy), 432.0, 528.0, etc.
+
+---
+
 ## Next Steps
 
 1. **Field recording integration** — Zoom H1n recordings from Annecy
 2. **Piano/guitar stems** — live instrument processing pipeline
-3. **Additional textures** — expand the bank based on production needs
