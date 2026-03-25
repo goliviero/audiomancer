@@ -175,6 +175,8 @@ def apply_filter_sweep(signal: np.ndarray, mod: np.ndarray,
 
     Divides the signal into short blocks and applies a different
     cutoff frequency per block, controlled by the modulation signal.
+    Filter state (zi) is carried across blocks to prevent clicks at
+    block boundaries.
 
     Args:
         signal: Audio signal.
@@ -184,11 +186,15 @@ def apply_filter_sweep(signal: np.ndarray, mod: np.ndarray,
     Returns:
         Filtered signal with sweeping cutoff.
     """
-    from scipy.signal import butter, sosfilt
+    from scipy.signal import butter, sosfilt, sosfilt_zi
 
-    block_size = sample_rate // 4  # 250ms blocks for smooth transitions
+    block_size = sample_rate // 20  # 50ms blocks — smoother cutoff transitions
     n_blocks = (len(signal) + block_size - 1) // block_size
     result = np.zeros_like(signal)
+    nyquist = sample_rate / 2
+
+    zi_l = None  # filter state, left/mono channel
+    zi_r = None  # filter state, right channel
 
     for i in range(n_blocks):
         start = i * block_size
@@ -197,16 +203,26 @@ def apply_filter_sweep(signal: np.ndarray, mod: np.ndarray,
 
         # Get cutoff from modulation at block midpoint
         mod_idx = min(mid, len(mod) - 1)
-        cutoff_hz = float(np.clip(mod[mod_idx], 200, sample_rate / 2 - 100))
-        nyquist = sample_rate / 2
+        cutoff_hz = float(np.clip(mod[mod_idx], 200, nyquist - 100))
         cutoff_norm = cutoff_hz / nyquist
 
         sos = butter(2, cutoff_norm, btype="low", output="sos")
         block = signal[start:end]
+
         if block.ndim == 2:
-            result[start:end, 0] = sosfilt(sos, block[:, 0])
-            result[start:end, 1] = sosfilt(sos, block[:, 1])
+            # Stereo: carry state per channel
+            if zi_l is None:
+                zi_l = sosfilt_zi(sos) * block[0, 0]
+                zi_r = sosfilt_zi(sos) * block[0, 1]
+            out_l, zi_l = sosfilt(sos, block[:, 0], zi=zi_l)
+            out_r, zi_r = sosfilt(sos, block[:, 1], zi=zi_r)
+            result[start:end, 0] = out_l
+            result[start:end, 1] = out_r
         else:
-            result[start:end] = sosfilt(sos, block)
+            # Mono
+            if zi_l is None:
+                zi_l = sosfilt_zi(sos) * block[0]
+            out, zi_l = sosfilt(sos, block, zi=zi_l)
+            result[start:end] = out
 
     return result
