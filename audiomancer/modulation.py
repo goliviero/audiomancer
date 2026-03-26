@@ -117,9 +117,6 @@ def evolving_lfo(duration_sec: float, rate_hz: float = 0.05,
     Returns:
         Modulation signal (n_samples,).
     """
-    n = int(sample_rate * duration_sec)
-    t = np.linspace(0, duration_sec, n, endpoint=False)
-
     # Drift the LFO rate slightly
     rate_mod = drift(duration_sec, speed=drift_speed * 0.5,
                      depth=rate_hz * 0.3, offset=rate_hz,

@@ -141,8 +141,6 @@ class TestMakeLoopable:
         stem = np.ones(N)
         stem[-100:] = 0.5  # End is quieter
         result = make_loopable(stem, crossfade_sec=1.0, sample_rate=SR)
-        # The very last sample should have incorporated the start value
-        xf = int(SR * 1.0)
         # Tail is blended: at the very end, majority is fade_out × tail + fade_in × head
         # Just verify no NaN/Inf
         assert np.all(np.isfinite(result))
