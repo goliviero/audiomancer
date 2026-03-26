@@ -26,8 +26,9 @@ Usage:
 import sys
 from pathlib import Path
 
-import numpy as np
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
@@ -36,44 +37,73 @@ from scipy.signal import spectrogram
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import audiomancer.quick as q
 from audiomancer import SAMPLE_RATE
-from audiomancer.synth import (
-    sine, square, sawtooth, triangle,
-    white_noise, pink_noise, brown_noise,
-    drone, pad, chord_pad,
-)
-from audiomancer.binaural import binaural, from_preset
+from audiomancer.binaural import from_preset
+from audiomancer.compose import fade_envelope, make_loopable, tremolo, verify_loop
 from audiomancer.effects import (
-    lowpass, highpass, reverb, reverb_cathedral, reverb_hall,
-    delay, chorus, compress, chorus_subtle,
-)
-from audiomancer.modulation import (
-    lfo_sine, lfo_triangle, drift, evolving_lfo,
-    apply_amplitude_mod, apply_filter_sweep,
-)
-from audiomancer.textures import REGISTRY, generate as gen_texture
-from audiomancer.compose import fade_envelope, tremolo, make_loopable, verify_loop
-from audiomancer.layers import mix, layer, crossfade, normalize_lufs
-from audiomancer.utils import (
-    normalize, fade_in, fade_out, mono_to_stereo, stereo_to_mono,
-    export_wav, silence, concat,
-)
-from audiomancer.spectral import freeze, blur, pitch_shift, spectral_gate, morph
-from audiomancer.spatial import (
-    pan, auto_pan, stereo_width, encode_mid_side, decode_mid_side,
-    haas_width, rotate,
-)
-from audiomancer.harmony import (
-    note_to_hz, scale, just_chord, harmonic_series, subharmonic_series,
-    drone_cluster, fibonacci_freqs, SOLFEGGIO, PLANETARY, SCALES,
-    just_intonation, pythagorean,
+    chorus_subtle,
+    compress,
+    delay,
+    highpass,
+    reverb_cathedral,
+    reverb_hall,
 )
 from audiomancer.envelope import (
-    adsr, adsr_exp, ar, segments, breathing, swell, gate_pattern,
+    adsr,
+    adsr_exp,
+    ar,
+    breathing,
+    gate_pattern,
+    swell,
 )
-from audiomancer.mastering import mono_bass, soft_clip, limit, master_chain
-import audiomancer.quick as q
-
+from audiomancer.harmony import (
+    PLANETARY,
+    SOLFEGGIO,
+    fibonacci_freqs,
+    just_chord,
+    note_to_hz,
+    pythagorean,
+    scale,
+)
+from audiomancer.layers import mix, normalize_lufs
+from audiomancer.mastering import limit, master_chain, mono_bass, soft_clip
+from audiomancer.modulation import (
+    apply_amplitude_mod,
+    apply_filter_sweep,
+    drift,
+    evolving_lfo,
+    lfo_sine,
+    lfo_triangle,
+)
+from audiomancer.spatial import (
+    auto_pan,
+    haas_width,
+    rotate,
+    stereo_width,
+)
+from audiomancer.spectral import blur, freeze, morph, pitch_shift
+from audiomancer.synth import (
+    brown_noise,
+    chord_pad,
+    drone,
+    pink_noise,
+    sawtooth,
+    sine,
+    square,
+    triangle,
+    white_noise,
+)
+from audiomancer.textures import REGISTRY
+from audiomancer.textures import generate as gen_texture
+from audiomancer.utils import (
+    export_wav,
+    fade_in,
+    fade_out,
+    mono_to_stereo,
+    normalize,
+    stereo_to_mono,
+)
 
 # ---------------------------------------------------------------------------
 # Config
@@ -857,7 +887,7 @@ if __name__ == "__main__":
     total_bytes = sum(p.stat().st_size for p in generated if p.exists())
     print()
     print("=" * 65)
-    print(f"GALLERY COMPLETE")
+    print("GALLERY COMPLETE")
     print(f"  {n_png} PNG  +  {n_wav} WAV clips")
     print(f"  Total: {total_bytes / 1024 / 1024:.1f} MB  —  {OUT}/")
     print("=" * 65)

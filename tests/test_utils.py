@@ -1,14 +1,24 @@
 """Tests for audiomancer.utils module."""
 
+import tempfile
+from pathlib import Path
+
 import numpy as np
 import pytest
-from pathlib import Path
-import tempfile
 
 from audiomancer.utils import (
-    silence, normalize, fade_in, fade_out, concat, pad_to_length,
-    mono_to_stereo, stereo_to_mono, export_wav, load_audio,
-    trim_silence, duration,
+    concat,
+    duration,
+    export_wav,
+    fade_in,
+    fade_out,
+    load_audio,
+    mono_to_stereo,
+    normalize,
+    pad_to_length,
+    silence,
+    stereo_to_mono,
+    trim_silence,
 )
 
 SR = 44100

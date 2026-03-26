@@ -1,10 +1,10 @@
 """Tests for audiomancer.stochastic module."""
 
-import numpy as np
-import pytest
 from unittest.mock import patch
 
-from audiomancer.stochastic import scatter_events, _place_events, DEFAULT_EVENTS
+import numpy as np
+
+from audiomancer.stochastic import DEFAULT_EVENTS, _place_events, scatter_events
 
 SR = 44100
 

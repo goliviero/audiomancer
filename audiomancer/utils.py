@@ -8,8 +8,7 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
-from audiomancer import SAMPLE_RATE, DEFAULT_AMPLITUDE
-
+from audiomancer import SAMPLE_RATE
 
 # ---------------------------------------------------------------------------
 # Signal helpers

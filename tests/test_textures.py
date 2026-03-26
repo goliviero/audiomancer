@@ -4,9 +4,12 @@ import numpy as np
 import pytest
 
 from audiomancer.textures import (
-    evolving_drone, breathing_pad, deep_space, ocean_bed,
-    crystal_shimmer, earth_hum, ethereal_wash, singing_bowl,
-    noise_wash, generate, list_textures, REGISTRY,
+    REGISTRY,
+    breathing_pad,
+    evolving_drone,
+    generate,
+    list_textures,
+    noise_wash,
 )
 
 SR = 44100

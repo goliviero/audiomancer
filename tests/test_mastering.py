@@ -1,9 +1,8 @@
 """Tests for audiomancer.mastering module."""
 
 import numpy as np
-import pytest
 
-from audiomancer.mastering import mono_bass, soft_clip, limit, master_chain
+from audiomancer.mastering import limit, master_chain, mono_bass, soft_clip
 
 SR = 44100
 DUR = 2.0

@@ -1,17 +1,28 @@
 """Tests for audiomancer.harmony — musical theory helpers."""
 
-import numpy as np
 import pytest
 
 from audiomancer.harmony import (
-    note_to_hz, hz_to_note, midi_to_hz, hz_to_midi,
-    scale, SCALES, just_intonation, pythagorean, just_chord,
-    harmonic_series, subharmonic_series,
-    transpose, interval_ratio, cents_between,
-    drone_cluster, fibonacci_freqs,
-    SACRED_RATIOS, SOLFEGGIO, PLANETARY,
+    PLANETARY,
+    SACRED_RATIOS,
+    SCALES,
+    SOLFEGGIO,
+    cents_between,
+    drone_cluster,
+    fibonacci_freqs,
+    harmonic_series,
+    hz_to_midi,
+    hz_to_note,
+    interval_ratio,
+    just_chord,
+    just_intonation,
+    midi_to_hz,
+    note_to_hz,
+    pythagorean,
+    scale,
+    subharmonic_series,
+    transpose,
 )
-
 
 # ---------------------------------------------------------------------------
 # Note / frequency conversion

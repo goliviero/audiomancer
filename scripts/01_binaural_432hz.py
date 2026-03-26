@@ -6,7 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from audiomancer.binaural import binaural_layered
-from audiomancer.utils import fade_in, fade_out, normalize, export_wav
+from audiomancer.utils import export_wav, fade_in, fade_out, normalize
 
 if __name__ == "__main__":
     signal = binaural_layered(carrier_hz=432.0, beat_hz=10.0,

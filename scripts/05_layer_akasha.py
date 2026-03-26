@@ -8,11 +8,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from audiomancer.synth import drone, chord_pad
 from audiomancer.binaural import binaural
-from audiomancer.effects import reverb_hall, lowpass
+from audiomancer.effects import lowpass, reverb_hall
 from audiomancer.layers import layer, normalize_lufs
-from audiomancer.utils import fade_in, fade_out, mono_to_stereo, export_wav
+from audiomancer.synth import chord_pad, drone
+from audiomancer.utils import export_wav, fade_in, fade_out, mono_to_stereo
 
 if __name__ == "__main__":
     DURATION = 300  # 5 minutes

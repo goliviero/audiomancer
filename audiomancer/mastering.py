@@ -9,7 +9,6 @@ from scipy.signal import butter, sosfiltfilt
 
 from audiomancer import SAMPLE_RATE
 
-
 # ---------------------------------------------------------------------------
 # Sub-bass mono (mono everything below crossover)
 # ---------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from audiomancer.binaural import binaural, binaural_layered, from_preset, BANDS, CARRIERS, PRESETS
+from audiomancer.binaural import BANDS, CARRIERS, PRESETS, binaural, binaural_layered, from_preset
 
 SR = 44100
 

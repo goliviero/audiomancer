@@ -18,17 +18,22 @@ from pathlib import Path
 import numpy as np
 
 from audiomancer import SAMPLE_RATE
-from audiomancer.synth import drone as _drone, chord_pad as _chord_pad
-from audiomancer.binaural import binaural as _binaural, from_preset as _from_preset
-from audiomancer.effects import reverb_cathedral, reverb_hall, chorus_subtle, lowpass
-from audiomancer.modulation import evolving_lfo, apply_amplitude_mod
+from audiomancer.binaural import binaural as _binaural
+from audiomancer.binaural import from_preset as _from_preset
+from audiomancer.effects import chorus_subtle, lowpass, reverb_cathedral, reverb_hall
+from audiomancer.layers import mix as _mix
+from audiomancer.layers import normalize_lufs
+from audiomancer.modulation import apply_amplitude_mod, evolving_lfo
+from audiomancer.synth import chord_pad as _chord_pad
+from audiomancer.synth import drone as _drone
 from audiomancer.textures import generate as _texture_generate
-from audiomancer.layers import mix as _mix, normalize_lufs
 from audiomancer.utils import (
-    export_wav, mono_to_stereo, normalize,
-    fade_in, fade_out,
+    export_wav,
+    fade_in,
+    fade_out,
+    mono_to_stereo,
+    normalize,
 )
-
 
 # ---------------------------------------------------------------------------
 # Note → fréquence (A4 = 440 Hz, tempérament égal)

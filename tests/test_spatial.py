@@ -1,15 +1,18 @@
 """Tests for audiomancer.spatial — stereo positioning and width."""
 
 import numpy as np
-import pytest
 
 from audiomancer import SAMPLE_RATE
 from audiomancer.spatial import (
-    pan, auto_pan, stereo_width, encode_mid_side, decode_mid_side,
-    haas_width, rotate,
+    auto_pan,
+    decode_mid_side,
+    encode_mid_side,
+    haas_width,
+    pan,
+    rotate,
+    stereo_width,
 )
 from audiomancer.synth import sine
-
 
 SR = SAMPLE_RATE
 DUR = 0.5

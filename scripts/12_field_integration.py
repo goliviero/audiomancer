@@ -18,11 +18,11 @@ sys.path.insert(0, str(project_root))
 
 import numpy as np
 
-from audiomancer.utils import load_audio, export_wav, normalize, fade_in, fade_out
-from audiomancer.field import clean, noise_gate, process_field
-from audiomancer.effects import reverb, lowpass, highpass
-from audiomancer.layers import mix, normalize_lufs, layer_at_offset
 from audiomancer.compose import make_loopable
+from audiomancer.effects import highpass, lowpass, reverb
+from audiomancer.field import clean, noise_gate
+from audiomancer.layers import layer_at_offset, normalize_lufs
+from audiomancer.utils import export_wav, fade_in, fade_out, load_audio, normalize
 
 SR = 44100
 

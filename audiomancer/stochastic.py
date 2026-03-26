@@ -7,10 +7,9 @@ Each render with a different seed produces a unique arrangement.
 import numpy as np
 
 from audiomancer import SAMPLE_RATE
-from audiomancer.textures import generate as _gen_texture
 from audiomancer.envelope import ar as _ar_envelope
+from audiomancer.textures import generate as _gen_texture
 from audiomancer.utils import mono_to_stereo
-
 
 # ---------------------------------------------------------------------------
 # Core: scatter micro-events across a duration

@@ -7,16 +7,23 @@ designed for hours-long ambient listening.
 import numpy as np
 
 from audiomancer import SAMPLE_RATE
-from audiomancer.synth import (
-    drone, chord_pad, pad, pink_noise, brown_noise, white_noise,
-)
+from audiomancer.effects import chorus, delay, highpass, lowpass, reverb
 from audiomancer.modulation import (
-    lfo_sine, drift, evolving_lfo,
-    apply_amplitude_mod, apply_filter_sweep,
+    apply_amplitude_mod,
+    apply_filter_sweep,
+    drift,
+    evolving_lfo,
+    lfo_sine,
 )
-from audiomancer.effects import lowpass, highpass, reverb, chorus, delay
+from audiomancer.synth import (
+    brown_noise,
+    chord_pad,
+    drone,
+    pad,
+    pink_noise,
+    white_noise,
+)
 from audiomancer.utils import mono_to_stereo, normalize
-
 
 # ---------------------------------------------------------------------------
 # Constants

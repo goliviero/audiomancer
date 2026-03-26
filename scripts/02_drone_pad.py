@@ -5,10 +5,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from audiomancer.synth import drone, pad
-from audiomancer.effects import reverb, lowpass
+from audiomancer.effects import lowpass, reverb
 from audiomancer.layers import mix
-from audiomancer.utils import fade_in, fade_out, normalize, export_wav
+from audiomancer.synth import drone, pad
+from audiomancer.utils import export_wav, fade_in, fade_out, normalize
 
 if __name__ == "__main__":
     # Deep drone at 55 Hz (A1)

@@ -18,10 +18,10 @@ sys.path.insert(0, str(project_root))
 
 import numpy as np
 
-from audiomancer.synth import drone, chord_pad, pink_noise
-from audiomancer.effects import reverb_cathedral, reverb_hall, chorus_subtle, lowpass
+from audiomancer.effects import chorus_subtle, lowpass, reverb_cathedral, reverb_hall
 from audiomancer.layers import crossfade
-from audiomancer.utils import fade_in, fade_out, mono_to_stereo, normalize, export_wav
+from audiomancer.synth import chord_pad, drone
+from audiomancer.utils import export_wav, mono_to_stereo, normalize
 
 # ---------------------------------------------------------------------------
 # Parameters

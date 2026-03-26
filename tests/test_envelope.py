@@ -5,9 +5,14 @@ import pytest
 
 from audiomancer import SAMPLE_RATE
 from audiomancer.envelope import (
-    adsr, adsr_exp, ar, segments, breathing, swell, gate_pattern,
+    adsr,
+    adsr_exp,
+    ar,
+    breathing,
+    gate_pattern,
+    segments,
+    swell,
 )
-
 
 SR = SAMPLE_RATE
 DUR = 1.0

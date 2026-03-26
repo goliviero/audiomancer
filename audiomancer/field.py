@@ -7,7 +7,7 @@ import numpy as np
 
 from audiomancer import SAMPLE_RATE
 from audiomancer.effects import highpass, lowpass, reverb
-from audiomancer.utils import normalize, fade_in, fade_out
+from audiomancer.utils import fade_in, fade_out, normalize
 
 
 def clean(signal: np.ndarray, sample_rate: int = SAMPLE_RATE) -> np.ndarray:

@@ -1,7 +1,6 @@
 """Tests for audiomancer.field module."""
 
 import numpy as np
-import pytest
 
 from audiomancer.field import clean, noise_gate, process_field
 

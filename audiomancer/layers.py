@@ -6,7 +6,7 @@ Combines multiple audio signals with volume control, fades, and alignment.
 import numpy as np
 
 from audiomancer import SAMPLE_RATE
-from audiomancer.utils import pad_to_length, mono_to_stereo
+from audiomancer.utils import mono_to_stereo, pad_to_length
 
 
 def mix(signals: list[np.ndarray],
@@ -246,7 +246,6 @@ def _k_weighting_sos(sample_rate: int) -> np.ndarray:
     1. Pre-filter: high shelf boosting high frequencies (~+4 dB above 1.5 kHz)
     2. RLB weighting: 2nd-order high-pass at ~38 Hz
     """
-    from scipy.signal import bilinear_zpk, zpk2sos
 
     # Stage 1: Pre-filter (high shelf)
     # Analog prototype: 2nd order shelving filter

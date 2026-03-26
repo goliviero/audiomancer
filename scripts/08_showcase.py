@@ -17,8 +17,8 @@ sys.path.insert(0, str(project_root))
 import numpy as np
 
 import audiomancer.quick as q
-from audiomancer.textures import REGISTRY
 from audiomancer.layers import normalize_lufs
+from audiomancer.textures import REGISTRY
 from audiomancer.utils import export_wav, fade_in, fade_out
 
 DUR = 15.0

@@ -9,7 +9,6 @@ from scipy.signal import get_window
 
 from audiomancer import SAMPLE_RATE
 
-
 # ---------------------------------------------------------------------------
 # STFT / ISTFT helpers
 # ---------------------------------------------------------------------------

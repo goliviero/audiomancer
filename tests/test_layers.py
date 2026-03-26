@@ -3,7 +3,15 @@
 import numpy as np
 import pytest
 
-from audiomancer.layers import mix, layer_at_offset, crossfade, layer, loop_seamless, normalize_lufs, measure_lufs
+from audiomancer.layers import (
+    crossfade,
+    layer,
+    layer_at_offset,
+    loop_seamless,
+    measure_lufs,
+    mix,
+    normalize_lufs,
+)
 
 SR = 44100
 

@@ -11,8 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from audiomancer.utils import load_audio, export_wav
 from audiomancer.field import process_field
+from audiomancer.utils import export_wav, load_audio
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process a field recording")

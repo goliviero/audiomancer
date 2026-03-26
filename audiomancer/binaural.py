@@ -6,8 +6,7 @@ Left = carrier, Right = carrier + beat_hz. The brain perceives the difference.
 
 import numpy as np
 
-from audiomancer import SAMPLE_RATE, DEFAULT_AMPLITUDE
-
+from audiomancer import DEFAULT_AMPLITUDE, SAMPLE_RATE
 
 # Common brainwave frequency bands
 BANDS = {

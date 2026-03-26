@@ -1,11 +1,14 @@
 """Tests for audiomancer.modulation module."""
 
 import numpy as np
-import pytest
 
 from audiomancer.modulation import (
-    lfo_sine, lfo_triangle, drift, evolving_lfo,
-    apply_amplitude_mod, apply_filter_sweep,
+    apply_amplitude_mod,
+    apply_filter_sweep,
+    drift,
+    evolving_lfo,
+    lfo_sine,
+    lfo_triangle,
 )
 
 SR = 44100

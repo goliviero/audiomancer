@@ -31,9 +31,9 @@ sys.path.insert(0, str(project_root))
 import numpy as np
 
 import audiomancer.quick as q
-from audiomancer.compose import fade_envelope, tremolo, stitch, make_loopable
-from audiomancer.modulation import apply_amplitude_mod, apply_filter_sweep
+from audiomancer.compose import fade_envelope, make_loopable, tremolo
 from audiomancer.layers import mix, normalize_lufs
+from audiomancer.modulation import apply_amplitude_mod, apply_filter_sweep
 from audiomancer.utils import export_wav
 
 # ---------------------------------------------------------------------------

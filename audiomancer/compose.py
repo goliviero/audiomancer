@@ -27,9 +27,8 @@ Usage:
 import numpy as np
 
 from audiomancer import SAMPLE_RATE
-from audiomancer.modulation import evolving_lfo, apply_amplitude_mod
 from audiomancer.layers import crossfade as _crossfade
-
+from audiomancer.modulation import apply_amplitude_mod, evolving_lfo
 
 # ---------------------------------------------------------------------------
 # Breakpoint envelopes

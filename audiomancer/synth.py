@@ -5,8 +5,7 @@ Generates raw audio signals as numpy arrays. No MIDI, no DAW.
 
 import numpy as np
 
-from audiomancer import SAMPLE_RATE, DEFAULT_AMPLITUDE
-
+from audiomancer import DEFAULT_AMPLITUDE, SAMPLE_RATE
 
 # ---------------------------------------------------------------------------
 # Time axis helper

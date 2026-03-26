@@ -23,12 +23,12 @@ sys.path.insert(0, str(project_root))
 
 import numpy as np
 
-from audiomancer.utils import load_audio, export_wav, normalize, fade_in, fade_out
-from audiomancer.effects import reverb_cathedral, reverb, lowpass, highpass
-from audiomancer.spectral import freeze, blur
-from audiomancer.synth import granular
-from audiomancer.layers import normalize_lufs
 from audiomancer.compose import make_loopable
+from audiomancer.effects import highpass, lowpass, reverb, reverb_cathedral
+from audiomancer.layers import normalize_lufs
+from audiomancer.spectral import blur, freeze
+from audiomancer.synth import granular
+from audiomancer.utils import export_wav, fade_in, fade_out, load_audio
 
 SR = 44100
 
@@ -107,7 +107,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     signal, sr = load_audio(args.input)
-    print(f"Loaded: {args.input.name} ({len(signal)/sr:.1f}s, {'stereo' if signal.ndim == 2 else 'mono'})")
+    ch = "stereo" if signal.ndim == 2 else "mono"
+    print(f"Loaded: {args.input.name} ({len(signal)/sr:.1f}s, {ch})")
     print(f"Mode: {args.mode} | Duration: {args.duration}s")
 
     processor = MODES[args.mode]

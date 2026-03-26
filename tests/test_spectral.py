@@ -1,15 +1,19 @@
 """Tests for audiomancer.spectral — FFT-based audio processing."""
 
 import numpy as np
-import pytest
 
 from audiomancer import SAMPLE_RATE
 from audiomancer.spectral import (
-    freeze, blur, pitch_shift, spectral_gate, morph, spectral_balance,
-    _stft, _istft,
+    _istft,
+    _stft,
+    blur,
+    freeze,
+    morph,
+    pitch_shift,
+    spectral_balance,
+    spectral_gate,
 )
-from audiomancer.synth import sine, white_noise, drone
-
+from audiomancer.synth import sine, white_noise
 
 SR = SAMPLE_RATE
 DUR = 1.0  # Short duration for fast tests

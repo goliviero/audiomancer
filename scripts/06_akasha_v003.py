@@ -23,11 +23,11 @@ sys.path.insert(0, str(project_root))
 import numpy as np
 
 from audiomancer import SAMPLE_RATE
-from audiomancer.synth import drone, chord_pad, pink_noise
 from audiomancer.binaural import binaural
-from audiomancer.effects import reverb_cathedral, reverb_hall, chorus_subtle, lowpass
+from audiomancer.effects import chorus_subtle, lowpass, reverb_cathedral, reverb_hall
 from audiomancer.layers import layer, normalize_lufs
-from audiomancer.utils import fade_in, fade_out, mono_to_stereo, export_wav
+from audiomancer.synth import chord_pad, drone, pink_noise
+from audiomancer.utils import export_wav, fade_in, fade_out, mono_to_stereo
 
 # ---------------------------------------------------------------------------
 # Production parameters
@@ -101,7 +101,7 @@ def generate_texture_layer() -> np.ndarray:
 
 
 def main():
-    print(f"=== Akasha Portal v003 — Audio Production ===")
+    print("=== Akasha Portal v003 — Audio Production ===")
     print(f"Duration: {DURATION_SEC // 60} minutes ({DURATION_SEC}s)")
     print(f"Sample rate: {SAMPLE_RATE} Hz")
     print()
@@ -148,7 +148,7 @@ def main():
     peak_db = 20 * np.log10(np.max(np.abs(master)) + 1e-10)
     rms_db = 20 * np.log10(np.sqrt(np.mean(master ** 2)) + 1e-10)
     print()
-    print(f"=== DONE ===")
+    print("=== DONE ===")
     print(f"Master:   {master_path}")
     print(f"Duration: {duration_min:.1f} min")
     print(f"Peak:     {peak_db:.1f} dB")

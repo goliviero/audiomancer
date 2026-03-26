@@ -11,8 +11,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from audiomancer.utils import load_audio, fade_in, fade_out, normalize, export_wav
-from audiomancer.effects import reverb_cathedral, lowpass
+from audiomancer.effects import lowpass, reverb_cathedral
+from audiomancer.utils import export_wav, fade_in, fade_out, load_audio, normalize
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Apply massive reverb to audio")

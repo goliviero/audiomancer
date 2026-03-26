@@ -4,8 +4,17 @@ import numpy as np
 import pytest
 
 from audiomancer.synth import (
-    sine, square, sawtooth, triangle, white_noise, pink_noise, brown_noise,
-    noise, drone, pad, chord_pad,
+    brown_noise,
+    chord_pad,
+    drone,
+    noise,
+    pad,
+    pink_noise,
+    sawtooth,
+    sine,
+    square,
+    triangle,
+    white_noise,
 )
 
 SR = 44100

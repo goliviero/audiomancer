@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from audiomancer.compose import fade_envelope, tremolo, stitch, make_loopable
+from audiomancer.compose import fade_envelope, make_loopable, stitch, tremolo
 
 SR = 44100
 DUR = 10.0

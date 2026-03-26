@@ -1,13 +1,21 @@
 """Tests for audiomancer.effects module."""
 
 import numpy as np
-import pytest
 
 from audiomancer import SAMPLE_RATE
 from audiomancer.effects import (
-    lowpass, highpass, reverb, delay, chorus, compress, chain,
-    reverb_hall, reverb_cathedral, delay_long, chorus_subtle,
     _process_board,
+    chain,
+    chorus,
+    chorus_subtle,
+    compress,
+    delay,
+    delay_long,
+    highpass,
+    lowpass,
+    reverb,
+    reverb_cathedral,
+    reverb_hall,
 )
 
 SR = SAMPLE_RATE

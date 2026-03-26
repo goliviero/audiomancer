@@ -38,12 +38,12 @@ sys.path.insert(0, str(project_root))
 import numpy as np
 
 import audiomancer.quick as q
-from audiomancer.compose import fade_envelope, tremolo, make_loopable, verify_loop
-from audiomancer.modulation import apply_amplitude_mod, apply_filter_sweep
-from audiomancer.layers import mix, normalize_lufs
-from audiomancer.spatial import auto_pan, stereo_width
+from audiomancer.compose import fade_envelope, make_loopable, tremolo, verify_loop
 from audiomancer.envelope import breathing
+from audiomancer.layers import mix, normalize_lufs
 from audiomancer.mastering import master_chain
+from audiomancer.modulation import apply_amplitude_mod, apply_filter_sweep
+from audiomancer.spatial import auto_pan
 from audiomancer.utils import export_wav
 
 SR = 44100
@@ -292,7 +292,9 @@ def main():
         if not args.standalone:
             score, report = verify_loop(stem, crossfade_sec=5.0)
             quality = "EXCELLENT" if score > 0.85 else "GOOD" if score > 0.7 else "CHECK"
-            print(f"  Loop: {quality} ({score:.3f}) | jump={report['jump_amplitude']:.6f} corr={report['correlation']:.4f}")
+            jump = report['jump_amplitude']
+            corr = report['correlation']
+            print(f"  Loop: {quality} ({score:.3f}) | jump={jump:.6f} corr={corr:.4f}")
 
         suffix = "_preview" if args.preview else ""
         suffix += "_standalone" if args.standalone else ""

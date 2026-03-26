@@ -6,7 +6,6 @@ Everything returns Hz frequencies ready to feed into synth/texture generators.
 
 import numpy as np
 
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
