@@ -2,36 +2,30 @@
 
 > Minimal Python audio scripts for ambient sound design.
 
-Audiomancer is a collection of simple, focused Python scripts for generating ambient/meditation audio.
 Not a DAW. Not a framework. Just useful scripts that produce WAV files.
 
-Born from [Fractal](https://github.com/goliviero/fractal), which pivoted from audio to procedural visual generation.
-Audiomancer inherits the audio synthesis code and strips away the DAW architecture.
-
+Born from [Fractal](https://github.com/goliviero/fractal), which pivoted to procedural visual generation.
 **Current production use:** generating 100% original audio for [Akasha Portal](https://github.com/goliviero/akasha-portal) videos,
-replacing AI-generated stems (Suno) with pure synthesis to avoid YouTube content ID issues.
+replacing AI-generated stems (Suno) with pure synthesis.
 
 ---
 
 ## Quick Start
 
 ```bash
-# Install
 git clone git@github.com:goliviero/audiomancer.git
 cd audiomancer
 pip install -e .
 
-# Generate 30 minutes of ambient meditation audio
 python scripts/06_akasha_v003.py
 # => output/akasha_v003_master.wav (stereo, 44100 Hz, -14 LUFS)
-# => output/stems/ (individual layers)
 ```
 
 ---
 
 ## Examples
 
-### 1. Generate a binaural beat
+### Binaural beat
 
 ```python
 from audiomancer.binaural import binaural
@@ -43,7 +37,7 @@ signal = fade_out(signal, 10.0)
 export_wav(signal, "output/binaural.wav")
 ```
 
-### 2. Create an ambient drone
+### Ambient drone
 
 ```python
 from audiomancer.synth import drone
@@ -56,7 +50,7 @@ signal = reverb_cathedral(signal)
 export_wav(signal, "output/om_drone.wav")
 ```
 
-### 3. Layer multiple stems
+### Layer multiple stems
 
 ```python
 from audiomancer.synth import chord_pad, pink_noise
@@ -76,33 +70,7 @@ export_wav(master, "output/layered_mix.wav")
 
 ---
 
-## Architecture
-
-```
-audiomancer/
-├── audiomancer/
-│   ├── synth.py         # Waveforms, drones, pads, noise
-│   ├── binaural.py      # Binaural beats + presets
-│   ├── effects.py       # Reverb, delay, chorus, compression, filters
-│   ├── layers.py        # Mixing, layering, crossfading, LUFS normalization
-│   ├── field.py         # Field recording processing
-│   └── utils.py         # I/O, normalize, fade, signal helpers
-├── scripts/
-│   ├── 01_binaural_432hz.py   # 10-min binaural beat
-│   ├── 02_drone_pad.py        # Ambient drone pad
-│   ├── 03_piano_reverb.py     # WAV + cathedral reverb
-│   ├── 04_field_processing.py # Field recording cleanup
-│   ├── 05_layer_akasha.py     # 5-min preview mix
-│   └── 06_akasha_v003.py      # PRODUCTION: 30-min Akasha audio
-├── tests/               # 70 pytest tests
-├── samples/             # Source samples (field recordings, etc.)
-├── output/              # Generated audio (gitignored)
-└── _fractal_backup/     # Original Fractal audio codebase
-```
-
----
-
-## Modules
+## Modules (14)
 
 | Module | What it does |
 |--------|-------------|
@@ -112,6 +80,14 @@ audiomancer/
 | `layers` | Mix signals, layer stems, crossfade, loop, LUFS normalization |
 | `field` | Field recording processing: cleanup, noise gate, reverb, fades |
 | `utils` | WAV I/O, normalize, fade in/out, mono/stereo conversion, trim |
+| `modulation` | LFO (sine/triangle), Brownian drift, evolving LFO, filter sweep |
+| `textures` | 9 evolving ambient presets with registry + generate() dispatcher |
+| `compose` | Temporal composition: fade envelopes, tremolo, stitch, make_loopable |
+| `quick` | One-liner API: q.drone, q.pad, q.binaural, q.texture, q.mix, q.save |
+| `spectral` | FFT processing: freeze, blur, pitch shift, spectral gate, morph |
+| `spatial` | Pan, auto-pan, stereo width, mid/side, Haas effect, rotate |
+| `harmony` | Scales, just intonation, Pythagorean tuning, chord generators, sacred ratios |
+| `envelope` | ADSR (linear/exponential), AR, multi-segment, breathing, swell, gate patterns |
 
 ---
 
@@ -128,7 +104,7 @@ Install: `pip install -e .` or `pip install numpy scipy soundfile pedalboard`
 ## Tests
 
 ```bash
-python -m pytest tests/ -v   # 70 tests, <2s
+python -m pytest tests/ -v   # 13 test files
 ```
 
 ---

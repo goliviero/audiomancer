@@ -25,7 +25,12 @@ audiomancer/
 │   ├── quick.py             # One-liner API: q.drone, q.pad, q.binaural, q.texture, q.mix
 │   │                        # note() converter, FREQS dict, HARMONICS_* presets
 │   ├── field.py             # Field recording pipeline: clean, noise_gate, process_field
-│   └── utils.py             # I/O (WAV), normalize, fade_in/out, trim, mono/stereo, duration
+│   ├── utils.py             # I/O (WAV), normalize, fade_in/out, trim, mono/stereo, duration
+│   ├── spectral.py          # FFT: STFT/ISTFT, freeze, blur, pitch_shift, spectral_gate, morph
+│   ├── spatial.py           # pan, auto_pan, stereo_width, mid/side, haas_width, rotate
+│   ├── harmony.py           # Scales (22 types), tuning (just/Pythagorean), chord generators,
+│   │                        # sacred/solfeggio/planetary freqs, harmonic/subharmonic series
+│   └── envelope.py          # ADSR (linear/exp), AR, multi-segment, breathing, swell, gate_pattern
 ├── scripts/
 │   ├── 01_binaural_432hz.py    # 10-min alpha binaural beat
 │   ├── 02_drone_pad.py         # 1-min ambient drone + pad
@@ -35,8 +40,9 @@ audiomancer/
 │   ├── 06_akasha_v003.py       # 30-min production: Om drone + theta + C major + pink noise
 │   ├── 07_stems_v003.py        # 5-min loopable stems for Akasha V003
 │   ├── 08_showcase.py          # 53 x 15s clips across 5 categories (audition tool)
-│   └── 09_progressive_stem.py  # 5-min progressive loopable stem with sections
-├── tests/                      # 151 pytest tests
+│   ├── 09_progressive_stem.py  # 5-min progressive loopable stem with sections
+│   └── 10_akasha_stems.py      # PRODUCTION: 6 loopable 5-min stems for Akasha Portal
+├── tests/                      # 13 test files
 ├── samples/                    # Source audio (gitignored)
 ├── output/                     # Generated WAV (gitignored)
 └── _fractal_backup/            # Archived Fractal audio code (18 modules)
@@ -48,7 +54,7 @@ audiomancer/
 
 - **Python 3.10+**
 - **numpy** — signal generation, array operations
-- **scipy** — Butterworth IIR filters (lowpass/highpass)
+- **scipy** — Butterworth IIR filters, FFT, windowing
 - **pedalboard** (Spotify) — reverb, delay, chorus, compression (VST-quality)
 - **soundfile** — WAV read/write (via libsndfile)
 - **pytest** — testing
@@ -65,20 +71,26 @@ Synthesis (synth.py)          Processing (effects.py)
   noise (white/pink/brown)      chain (custom effect list)
          │                              │
          ▼                              ▼
-    Modulation (modulation.py)
-      LFO sine/triangle
-      Brownian drift (random, non-repeating)
-      Evolving LFO (drifting rate/depth)
+    Modulation (modulation.py)     Spectral (spectral.py)
+      LFO sine/triangle             freeze, blur, pitch_shift
+      Brownian drift                 spectral_gate, morph
+      Evolving LFO                   STFT/ISTFT engine
       Amplitude mod, filter sweep
-         │
-         ▼
+         │                              │
+         ▼                              ▼
     Textures (textures.py)         Compose (compose.py)
       9 presets combining             fade_envelope (breakpoints)
       synth + mod + effects           tremolo (slow LFO)
       generate("deep_space", 300)     stitch (sections + crossfade)
          │                            make_loopable (loop seal)
          ▼                              │
-    Layering (layers.py)               │
+    Spatial (spatial.py)               │
+      pan, auto_pan, rotate            │
+      stereo_width, mid/side           │
+      haas_width                       │
+         │                              │
+         ▼                              ▼
+    Layering (layers.py)
       mix / layer (volume control)  ←──┘
       crossfade / loop_seamless
       normalize_lufs (-14 dB YouTube)
@@ -87,6 +99,12 @@ Synthesis (synth.py)          Processing (effects.py)
     quick.py (one-liner API)       Export (utils.py)
       q.drone / q.pad / q.mix   →  export_wav (16/24/32-bit)
       q.texture / q.binaural        → output/*.wav
+
+    Harmony (harmony.py)           Envelope (envelope.py)
+      scales (22 types)              ADSR (linear/exp), AR
+      just intonation / Pythagorean  multi-segment, breathing
+      sacred/solfeggio/planetary     swell, gate_pattern
+      chord generators               (feed into any synthesis)
 ```
 
 ---
@@ -109,19 +127,7 @@ Audiomancer generates WAV stems → placed in `akasha-portal/sounds/processed/` 
 
 ---
 
-## Current State
-
-- **v0.3.0** — 10 modules, 9 scripts, 151 tests
-- Modulation system: LFO, Brownian drift, evolving LFO
-- Texture bank: 9 evolving presets
-- Composition layer: fade_envelope, tremolo, stitch, make_loopable
-- Progressive stems: 5-min loopable arc (awakening → deepening → fullness → return)
-- one-liner API: quick.py + FREQS dict + note() converter
-- Showcase: 53 audition clips in output/showcase/
-
----
-
-## Texture Bank
+## Texture Bank (9 presets)
 
 | Preset | Role | Tonal | Description |
 |--------|------|-------|-------------|
@@ -146,8 +152,6 @@ Audiomancer generates WAV stems → placed in `akasha-portal/sounds/processed/` 
 4:00 – 5:00  RETURN     Texture exits, pad fades, filter closes, volume → 0.25
 Loop seal: 5s crossfade on loop point via make_loopable()
 ```
-
-Change `FREQ` at the top to swap: 111.0 (Holy), 432.0, 528.0, etc.
 
 ---
 
