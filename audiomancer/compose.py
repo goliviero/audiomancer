@@ -19,6 +19,9 @@ Usage:
 
     # Rendre le résultat seamless pour ffmpeg
     loopable = make_loopable(full, crossfade_sec=5.0)
+
+    # Verify loop quality
+    score, report = verify_loop(loopable, crossfade_sec=5.0)
 """
 
 import numpy as np
@@ -180,3 +183,95 @@ def make_loopable(stem: np.ndarray,
     result = stem.copy()
     result[-xf_samples:] = blended
     return result
+
+
+# ---------------------------------------------------------------------------
+# Loop verification
+# ---------------------------------------------------------------------------
+
+def verify_loop(stem: np.ndarray, crossfade_sec: float = 5.0,
+                sample_rate: int = SAMPLE_RATE) -> tuple[float, dict]:
+    """Verify loop quality at the junction point.
+
+    Checks for discontinuities, level mismatch, and spectral similarity
+    between the end and start of the stem.
+
+    Args:
+        stem: Loopable stem (output of make_loopable).
+        crossfade_sec: Duration of the crossfade zone to analyze.
+        sample_rate: Sample rate.
+
+    Returns:
+        Tuple of (score, report):
+            score: 0.0 (terrible) to 1.0 (perfect loop).
+            report: Dict with individual metrics.
+    """
+    xf_samples = int(sample_rate * crossfade_sec)
+    xf_samples = min(xf_samples, stem.shape[0] // 4)
+
+    # Work in mono for analysis
+    if stem.ndim == 2:
+        mono = np.mean(stem, axis=1)
+    else:
+        mono = stem
+
+    head = mono[:xf_samples]
+    tail = mono[-xf_samples:]
+
+    # 1. Level difference at junction (should be near 0)
+    head_rms = np.sqrt(np.mean(head ** 2))
+    tail_rms = np.sqrt(np.mean(tail ** 2))
+    if head_rms > 0 and tail_rms > 0:
+        level_diff_db = abs(20 * np.log10(tail_rms / head_rms))
+    else:
+        level_diff_db = 0.0
+
+    # 2. Sample discontinuity at exact loop point (last sample → first sample)
+    jump = abs(mono[-1] - mono[0])
+    jump_score = max(0.0, 1.0 - jump * 100)  # penalize jumps > 0.01
+
+    # 3. Cross-correlation between head and tail (spectral similarity)
+    head_norm = head - np.mean(head)
+    tail_norm = tail - np.mean(tail)
+    h_std = np.std(head_norm)
+    t_std = np.std(tail_norm)
+    if h_std > 0 and t_std > 0:
+        correlation = np.corrcoef(head_norm, tail_norm)[0, 1]
+    else:
+        correlation = 1.0
+
+    # 4. Envelope continuity (RMS in short windows at boundary)
+    window_ms = 50
+    window_samples = int(sample_rate * window_ms / 1000)
+    tail_end_rms = np.sqrt(np.mean(mono[-window_samples:] ** 2))
+    head_start_rms = np.sqrt(np.mean(mono[:window_samples] ** 2))
+    if tail_end_rms > 0 and head_start_rms > 0:
+        boundary_diff_db = abs(20 * np.log10(tail_end_rms / head_start_rms))
+    else:
+        boundary_diff_db = 0.0
+
+    # Composite score (weighted)
+    level_score = max(0.0, 1.0 - level_diff_db / 6.0)    # 6 dB = 0 score
+    corr_score = max(0.0, (correlation + 1) / 2)           # -1..1 → 0..1
+    boundary_score = max(0.0, 1.0 - boundary_diff_db / 3.0)
+
+    score = (
+        0.25 * level_score
+        + 0.25 * jump_score
+        + 0.25 * corr_score
+        + 0.25 * boundary_score
+    )
+
+    report = {
+        "level_diff_db": round(level_diff_db, 2),
+        "jump_amplitude": round(jump, 6),
+        "correlation": round(correlation, 4),
+        "boundary_diff_db": round(boundary_diff_db, 2),
+        "level_score": round(level_score, 3),
+        "jump_score": round(jump_score, 3),
+        "corr_score": round(corr_score, 3),
+        "boundary_score": round(boundary_score, 3),
+        "overall": round(score, 3),
+    }
+
+    return score, report

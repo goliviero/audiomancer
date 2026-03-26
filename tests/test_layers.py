@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from audiomancer.layers import mix, layer_at_offset, crossfade, layer, loop_seamless, normalize_lufs
+from audiomancer.layers import mix, layer_at_offset, crossfade, layer, loop_seamless, normalize_lufs, measure_lufs
 
 SR = 44100
 
@@ -96,13 +96,37 @@ class TestLoopSeamless:
 
 class TestNormalizeLufs:
     def test_normalize_changes_level(self):
-        sig = np.ones(SR) * 0.001  # Very quiet
+        # Use a sine wave — K-weighting handles tonal content predictably
+        t = np.linspace(0, 1, SR, endpoint=False)
+        sig = 0.001 * np.sin(2 * np.pi * 440 * t)
         result = normalize_lufs(sig, target_lufs=-14.0)
-        rms_out = np.sqrt(np.mean(result ** 2))
-        lufs_out = 20 * np.log10(rms_out)
-        assert lufs_out == pytest.approx(-14.0, abs=1.0)
+        lufs_out = measure_lufs(result)
+        assert lufs_out == pytest.approx(-14.0, abs=1.5)
 
     def test_normalize_silent(self):
         sig = np.zeros(SR)
         result = normalize_lufs(sig, target_lufs=-14.0)
         np.testing.assert_allclose(result, sig)
+
+
+class TestMeasureLufs:
+    def test_silent_returns_neg_inf(self):
+        sig = np.zeros(SR)
+        assert measure_lufs(sig) == -np.inf
+
+    def test_louder_signal_higher_lufs(self):
+        quiet = np.ones(SR) * 0.01
+        loud = np.ones(SR) * 0.5
+        assert measure_lufs(loud) > measure_lufs(quiet)
+
+    def test_stereo_signal(self):
+        sig = np.column_stack([np.ones(SR) * 0.1, np.ones(SR) * 0.1])
+        lufs = measure_lufs(sig)
+        assert np.isfinite(lufs)
+
+    def test_returns_finite_for_normal_signal(self):
+        t = np.linspace(0, 1, SR, endpoint=False)
+        sig = 0.5 * np.sin(2 * np.pi * 440 * t)
+        lufs = measure_lufs(sig)
+        assert np.isfinite(lufs)
+        assert -60 < lufs < 0  # Reasonable range

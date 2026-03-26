@@ -269,6 +269,83 @@ def spectral_gate(signal: np.ndarray, threshold_db: float = -40.0,
 # Spectral morph
 # ---------------------------------------------------------------------------
 
+def spectral_balance(stems: dict[str, np.ndarray],
+                     bands: list[tuple[str, float, float]] | None = None,
+                     fft_size: int = 4096,
+                     sample_rate: int = SAMPLE_RATE) -> dict:
+    """Analyse spectral balance across multiple stems.
+
+    Computes RMS energy per frequency band for each stem, useful for
+    checking that a multi-stem mix has good frequency coverage without
+    excessive overlap.
+
+    Args:
+        stems: Dict of {name: signal} pairs.
+        bands: Frequency band definitions as (label, lo_hz, hi_hz).
+            Defaults to sub/low/low-mid/mid/high-mid/high/air.
+        fft_size: FFT window size.
+        sample_rate: Sample rate.
+
+    Returns:
+        Dict with keys:
+            - "bands": list of band labels
+            - "stems": dict of {name: list of dB values per band}
+            - "balance_score": 0–1 indicating how evenly the bands are covered
+            - "overlap_warnings": list of (band, stem_a, stem_b) where energy is high in both
+    """
+    if bands is None:
+        bands = [
+            ("sub",      20,    60),
+            ("low",      60,   200),
+            ("low-mid", 200,   500),
+            ("mid",     500,  2000),
+            ("hi-mid", 2000,  6000),
+            ("high",   6000, 12000),
+            ("air",   12000, 20000),
+        ]
+
+    freqs = np.fft.rfftfreq(fft_size, d=1.0 / sample_rate)
+    result_stems = {}
+
+    for name, sig in stems.items():
+        # Use mono for analysis
+        mono = sig if sig.ndim == 1 else sig.mean(axis=1)
+        spectrum = np.abs(np.fft.rfft(mono, n=fft_size)) ** 2
+        band_energies = []
+        for _, lo, hi in bands:
+            mask = (freqs >= lo) & (freqs < hi)
+            energy = np.mean(spectrum[mask]) if mask.any() else 1e-20
+            db = 10 * np.log10(max(energy, 1e-20))
+            band_energies.append(round(db, 1))
+        result_stems[name] = band_energies
+
+    # Balance score: how evenly the total energy is spread across bands
+    total_per_band = np.zeros(len(bands))
+    for energies in result_stems.values():
+        total_per_band += 10 ** (np.array(energies) / 10)
+    total_db = 10 * np.log10(np.maximum(total_per_band, 1e-20))
+    # Score: 1.0 if perfectly flat, lower if imbalanced
+    db_range = np.max(total_db) - np.min(total_db)
+    balance_score = max(0.0, 1.0 - db_range / 60)
+
+    # Overlap warnings: two stems both > -20 dB in same band
+    overlap_warnings = []
+    stem_names = list(result_stems.keys())
+    for b_idx, (label, _, _) in enumerate(bands):
+        loud_stems = [n for n in stem_names if result_stems[n][b_idx] > -20]
+        if len(loud_stems) >= 2:
+            for i in range(len(loud_stems)):
+                for j in range(i + 1, len(loud_stems)):
+                    overlap_warnings.append((label, loud_stems[i], loud_stems[j]))
+
+    return {
+        "bands": [b[0] for b in bands],
+        "stems": result_stems,
+        "balance_score": round(balance_score, 3),
+        "overlap_warnings": overlap_warnings,
+    }
+
+
 def morph(signal_a: np.ndarray, signal_b: np.ndarray,
           mix: float = 0.5, fft_size: int = 2048,
           sample_rate: int = SAMPLE_RATE) -> np.ndarray:

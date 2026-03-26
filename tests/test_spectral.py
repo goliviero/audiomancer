@@ -5,7 +5,7 @@ import pytest
 
 from audiomancer import SAMPLE_RATE
 from audiomancer.spectral import (
-    freeze, blur, pitch_shift, spectral_gate, morph,
+    freeze, blur, pitch_shift, spectral_gate, morph, spectral_balance,
     _stft, _istft,
 )
 from audiomancer.synth import sine, white_noise, drone
@@ -163,3 +163,51 @@ class TestMorph:
         b = sine(880, 0.5)
         out = morph(a, b, mix=0.5)
         assert len(out) <= len(a)
+
+
+# ---------------------------------------------------------------------------
+# Spectral balance
+# ---------------------------------------------------------------------------
+
+class TestSpectralBalance:
+    def test_returns_all_keys(self):
+        stems = {
+            "low": sine(100, DUR, sample_rate=SR),
+            "high": sine(5000, DUR, sample_rate=SR),
+        }
+        result = spectral_balance(stems, sample_rate=SR)
+        assert "bands" in result
+        assert "stems" in result
+        assert "balance_score" in result
+        assert "overlap_warnings" in result
+
+    def test_band_count_matches(self):
+        stems = {"test": sine(440, DUR, sample_rate=SR)}
+        result = spectral_balance(stems, sample_rate=SR)
+        assert len(result["bands"]) == 7  # default 7 bands
+        assert len(result["stems"]["test"]) == 7
+
+    def test_balance_score_range(self):
+        stems = {
+            "a": sine(200, DUR, sample_rate=SR),
+            "b": sine(2000, DUR, sample_rate=SR),
+        }
+        result = spectral_balance(stems, sample_rate=SR)
+        assert 0.0 <= result["balance_score"] <= 1.0
+
+    def test_custom_bands(self):
+        bands = [("low", 20, 500), ("high", 500, 20000)]
+        stems = {"test": sine(440, DUR, sample_rate=SR)}
+        result = spectral_balance(stems, bands=bands, sample_rate=SR)
+        assert len(result["bands"]) == 2
+
+    def test_overlap_detection(self):
+        # Two stems both loud at same frequency
+        stems = {
+            "a": sine(440, DUR, amplitude=0.8, sample_rate=SR),
+            "b": sine(440, DUR, amplitude=0.8, sample_rate=SR),
+        }
+        result = spectral_balance(stems, sample_rate=SR)
+        # Should detect overlap in the mid band (440 Hz is in 200-2000)
+        has_overlap = any(w[0] == "mid" for w in result["overlap_warnings"])
+        assert has_overlap

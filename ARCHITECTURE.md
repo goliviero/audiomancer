@@ -12,21 +12,26 @@ audiomancer/
 │   ├── __init__.py          # SAMPLE_RATE (44100), DEFAULT_AMPLITUDE (0.5)
 │   ├── synth.py             # Waveforms: sine, saw, square, triangle, noise (white/pink/brown)
 │   │                        # Drones: harmonic overtones. Pads: detuned unison, chord pads
+│   │                        # Granular synthesis: grain clouds from source buffers
 │   ├── binaural.py          # Stereo binaural beats, 6 presets (theta/alpha/delta/solfeggio/om)
 │   ├── effects.py           # Scipy filters (LP/HP) + Pedalboard (reverb/delay/chorus/compress)
 │   │                        # Presets: reverb_hall, reverb_cathedral, delay_long, chorus_subtle
-│   ├── layers.py            # mix (dB), layer (linear), crossfade, loop_seamless, normalize_lufs
+│   ├── layers.py            # mix (dB), layer (linear), crossfade, loop_seamless
+│   │                        # normalize_lufs (K-weighted ITU-R BS.1770), measure_lufs
 │   ├── modulation.py        # LFO (sine/triangle), Brownian drift, evolving LFO
 │   │                        # Amplitude modulation, time-varying filter sweep
 │   ├── textures.py          # 9 ready-to-use evolving ambient presets (texture bank)
 │   │                        # Registry + generate() dispatcher
 │   ├── compose.py           # Temporal composition: fade_envelope (breakpoints),
-│   │                        # tremolo, stitch (sections + crossfade), make_loopable
+│   │                        # tremolo, stitch (sections + crossfade), make_loopable, verify_loop
+│   ├── mastering.py         # Final chain: mono_bass (Linkwitz-Riley), soft_clip, limiter, master_chain
+│   ├── stochastic.py        # Random micro-event placement: scatter_events, DEFAULT_EVENTS
 │   ├── quick.py             # One-liner API: q.drone, q.pad, q.binaural, q.texture, q.mix
 │   │                        # note() converter, FREQS dict, HARMONICS_* presets
 │   ├── field.py             # Field recording pipeline: clean, noise_gate, process_field
 │   ├── utils.py             # I/O (WAV), normalize, fade_in/out, trim, mono/stereo, duration
 │   ├── spectral.py          # FFT: STFT/ISTFT, freeze, blur, pitch_shift, spectral_gate, morph
+│   │                        # spectral_balance (multi-stem frequency analysis)
 │   ├── spatial.py           # pan, auto_pan, stereo_width, mid/side, haas_width, rotate
 │   ├── harmony.py           # Scales (22 types), tuning (just/Pythagorean), chord generators,
 │   │                        # sacred/solfeggio/planetary freqs, harmonic/subharmonic series
@@ -41,9 +46,11 @@ audiomancer/
 │   ├── 07_stems_v003.py        # 5-min loopable stems for Akasha V003
 │   ├── 08_showcase.py          # 53 x 15s clips across 5 categories (audition tool)
 │   ├── 09_progressive_stem.py  # 5-min progressive loopable stem with sections
-│   ├── 10_akasha_stems.py      # PRODUCTION: 6 loopable 5-min stems for Akasha Portal
-│   └── 11_gallery.py           # Visual + audio gallery (14 PNG + 10 WAV, <5 MB)
-├── tests/                      # 13 test files
+│   ├── 10_akasha_stems.py      # PRODUCTION: 6 stems (--vary, --preview, --standalone)
+│   ├── 11_gallery.py           # Visual + audio gallery (17 PNG + 13 WAV)
+│   ├── 12_field_integration.py # Field recording pipeline (Zoom H1n → ambient layer)
+│   └── 13_instrument_stems.py  # Instrument → ambient (wash/freeze/granular modes)
+├── tests/                      # 16 test files
 ├── samples/                    # Source audio (gitignored)
 └── output/                     # Generated WAV + gallery PNG (gitignored)
 ```
@@ -117,7 +124,7 @@ Synthesis (synth.py)          Processing (effects.py)
 | 2 | No AI audio | YouTube 2026 flags AI content. Suno under lawsuit. 100% synthesis. |
 | 3 | numpy in-memory | Simple, correct. 30 min ≈ 600 MB RAM. For 3h+, generate 5-10 min and loop in ffmpeg. |
 | 4 | Pedalboard for effects | VST-quality, maintained by Spotify, zero config. Scipy for filters only. |
-| 5 | -14 LUFS target | YouTube streaming standard. RMS approximation sufficient for ambient content. |
+| 5 | -14 LUFS target | YouTube streaming standard. K-weighted ITU-R BS.1770 measurement. |
 
 ---
 
@@ -157,5 +164,5 @@ Loop seal: 5s crossfade on loop point via make_loopable()
 
 ## Next Steps
 
-1. **Field recording integration** — Zoom H1n recordings from Annecy
-2. **Piano/guitar stems** — live instrument processing pipeline
+1. **V003 Mycelium production** — 174 Hz solfège stems with earth_hum textures
+2. **Live performance** — real-time parameter control for streaming

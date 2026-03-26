@@ -9,3 +9,6 @@ output/
 .venv/
 dist/
 *.egg-info/
+
+# Claude Code local settings (VS Code workaround)
+.claude/settings.json

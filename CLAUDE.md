@@ -6,7 +6,7 @@
 ## Summary
 
 Minimal Python audio toolkit for ambient/meditation sound design. Scripts > framework.
-14 modules, 12 scripts, 13 test files. Active production: Akasha Portal stems.
+16 modules, 14 scripts, 16 test files. Active production: Akasha Portal stems.
 
 ## Stack
 
@@ -17,7 +17,9 @@ Python 3.10+, numpy, scipy, pedalboard (Spotify), soundfile, pytest.
 ```bash
 python -m pytest tests/ -v                    # all tests
 python scripts/10_akasha_stems.py             # production: 6 loopable 5-min stems
-python scripts/11_gallery.py                  # visual + audio gallery (14 PNG + 10 WAV)
+python scripts/10_akasha_stems.py --preview   # quick 30s preview
+python scripts/10_akasha_stems.py --vary      # random seed each run
+python scripts/11_gallery.py                  # visual + audio gallery (17 PNG + 13 WAV)
 python scripts/06_akasha_v003.py              # 30-min Om meditation
 ```
 
