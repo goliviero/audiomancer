@@ -1,0 +1,1 @@
+C:/Users/Guillaume/Documents/Projets/dotfiles/scripts/activity_log.py
