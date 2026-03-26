@@ -100,18 +100,29 @@ def export_wav(signal: np.ndarray, path: str | Path,
                bit_depth: int = 16) -> Path:
     """Export signal to WAV file."""
     path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
     subtype_map = {16: "PCM_16", 24: "PCM_24", 32: "FLOAT"}
     subtype = subtype_map.get(bit_depth)
     if subtype is None:
         raise ValueError(f"Unsupported bit depth: {bit_depth}. Use 16, 24, or 32.")
-    sf.write(str(path), signal, sample_rate, subtype=subtype)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        sf.write(str(path), signal, sample_rate, subtype=subtype)
+    except PermissionError:
+        raise PermissionError(f"Cannot write to {path} — check directory permissions")
+    except OSError as e:
+        raise OSError(f"Failed to export WAV to {path}: {e}") from e
     return path
 
 
 def load_audio(path: str | Path) -> tuple[np.ndarray, int]:
     """Load an audio file. Returns (signal, sample_rate)."""
-    data, sr = sf.read(str(path), dtype="float64")
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"Audio file not found: {path}")
+    try:
+        data, sr = sf.read(str(path), dtype="float64")
+    except RuntimeError as e:
+        raise RuntimeError(f"Cannot read {path} — unsupported or corrupted file: {e}") from e
     return data, sr
 
 
