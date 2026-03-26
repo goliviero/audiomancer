@@ -41,11 +41,11 @@ audiomancer/
 │   ├── 07_stems_v003.py        # 5-min loopable stems for Akasha V003
 │   ├── 08_showcase.py          # 53 x 15s clips across 5 categories (audition tool)
 │   ├── 09_progressive_stem.py  # 5-min progressive loopable stem with sections
-│   └── 10_akasha_stems.py      # PRODUCTION: 6 loopable 5-min stems for Akasha Portal
+│   ├── 10_akasha_stems.py      # PRODUCTION: 6 loopable 5-min stems for Akasha Portal
+│   └── 11_gallery.py           # Visual + audio gallery (14 PNG + 10 WAV, <5 MB)
 ├── tests/                      # 13 test files
 ├── samples/                    # Source audio (gitignored)
-├── output/                     # Generated WAV (gitignored)
-└── _fractal_backup/            # Archived Fractal audio code (18 modules)
+└── output/                     # Generated WAV + gallery PNG (gitignored)
 ```
 
 ---
