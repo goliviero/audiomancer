@@ -70,7 +70,7 @@ export_wav(master, "output/layered_mix.wav")
 
 ---
 
-## Modules (14)
+## Modules
 
 | Module | What it does |
 |--------|-------------|
@@ -104,7 +104,7 @@ Install: `pip install -e .` or `pip install numpy scipy soundfile pedalboard`
 ## Tests
 
 ```bash
-python -m pytest tests/ -v   # 13 test files
+python -m pytest tests/ -v   # 16 test files, 336 tests
 ```
 
 ---

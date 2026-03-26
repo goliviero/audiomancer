@@ -16,6 +16,14 @@ def _time_axis(duration_sec: float, sample_rate: int) -> np.ndarray:
     return np.linspace(0, duration_sec, n, endpoint=False)
 
 
+def _normalize_peak(signal: np.ndarray, amplitude: float) -> np.ndarray:
+    """Scale signal so its peak equals *amplitude*."""
+    peak = np.max(np.abs(signal))
+    if peak > 0:
+        return amplitude * signal / peak
+    return signal
+
+
 # ---------------------------------------------------------------------------
 # Basic waveforms
 # ---------------------------------------------------------------------------
@@ -71,10 +79,7 @@ def pink_noise(duration_sec: float, amplitude: float = DEFAULT_AMPLITUDE,
     freqs[0] = 1.0  # avoid division by zero at DC
     fft = fft / np.sqrt(freqs)
     pink = np.fft.irfft(fft, n=n)
-    peak = np.max(np.abs(pink))
-    if peak > 0:
-        pink = amplitude * (pink / peak)
-    return pink
+    return _normalize_peak(pink, amplitude)
 
 
 def brown_noise(duration_sec: float, amplitude: float = DEFAULT_AMPLITUDE,
@@ -84,10 +89,7 @@ def brown_noise(duration_sec: float, amplitude: float = DEFAULT_AMPLITUDE,
     rng = np.random.default_rng()
     white = rng.standard_normal(n)
     brown = np.cumsum(white)
-    peak = np.max(np.abs(brown))
-    if peak > 0:
-        brown = amplitude * (brown / peak)
-    return brown
+    return _normalize_peak(brown, amplitude)
 
 
 def noise(color: str = "pink", duration_sec: float = 60.0,
@@ -146,11 +148,7 @@ def drone(frequency: float, duration_sec: float,
             continue
         signal += rel_amp * np.sin(2 * np.pi * freq * t)
 
-    # Normalize
-    peak = np.max(np.abs(signal))
-    if peak > 0:
-        signal = amplitude * signal / peak
-    return signal
+    return _normalize_peak(signal, amplitude)
 
 
 def pad(frequency: float, duration_sec: float,
@@ -178,11 +176,7 @@ def pad(frequency: float, duration_sec: float,
         freq = frequency * 2 ** (offset / 1200)
         signal += sawtooth(freq, duration_sec, amplitude=1.0, sample_rate=sample_rate)
 
-    # Normalize
-    peak = np.max(np.abs(signal))
-    if peak > 0:
-        signal = amplitude * signal / peak
-    return signal
+    return _normalize_peak(signal, amplitude)
 
 
 def chord_pad(frequencies: list[float], duration_sec: float,
@@ -211,10 +205,7 @@ def chord_pad(frequencies: list[float], duration_sec: float,
             detuned = freq * 2 ** (offset / 1200)
             signal += np.sin(2 * np.pi * detuned * t)
 
-    peak = np.max(np.abs(signal))
-    if peak > 0:
-        signal = amplitude * signal / peak
-    return signal
+    return _normalize_peak(signal, amplitude)
 
 
 # ---------------------------------------------------------------------------
@@ -292,8 +283,4 @@ def granular(source: np.ndarray, duration_sec: float,
         length = out_end - out_pos
         output[out_pos:out_end] += grain[:length]
 
-    # Normalize
-    peak = np.max(np.abs(output))
-    if peak > 0:
-        output = amplitude * output / peak
-    return output
+    return _normalize_peak(output, amplitude)

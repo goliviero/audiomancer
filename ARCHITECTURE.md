@@ -20,8 +20,9 @@ audiomancer/
 │   │                        # normalize_lufs (K-weighted ITU-R BS.1770), measure_lufs
 │   ├── modulation.py        # LFO (sine/triangle), Brownian drift, evolving LFO
 │   │                        # Amplitude modulation, time-varying filter sweep
-│   ├── textures.py          # 9 ready-to-use evolving ambient presets (texture bank)
-│   │                        # Registry + generate() dispatcher
+│   ├── textures/            # 9 ready-to-use evolving ambient presets (texture bank)
+│   │   ├── _presets.py      # Preset implementations (evolving_drone, deep_space, etc.)
+│   │   └── _registry.py     # Registry + generate() dispatcher
 │   ├── compose.py           # Temporal composition: fade_envelope (breakpoints),
 │   │                        # tremolo, stitch (sections + crossfade), make_loopable, verify_loop
 │   ├── mastering.py         # Final chain: mono_bass (Linkwitz-Riley), soft_clip, limiter, master_chain
@@ -165,4 +166,3 @@ Loop seal: 5s crossfade on loop point via make_loopable()
 ## Next Steps
 
 1. **V003 Mycelium production** — 174 Hz solfège stems with earth_hum textures
-2. **Live performance** — real-time parameter control for streaming
