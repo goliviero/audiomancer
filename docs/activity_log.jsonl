@@ -4,3 +4,4 @@
 {"ts": "2026-03-26T23:29:19", "session_id": "2026-03-26T23", "action": "fix", "detail": "Remove 2 unused variables (F841): modulation.py t, test_compose.py xf", "result": "ok"}
 {"ts": "2026-03-27T00:25:00", "session_id": "2026-03-27T00", "action": "refactor", "detail": "senior-dev-analyze audit: DRY synth (_normalize_peak), add requirements.lock, update DEC-001 (200→400), fix ARCHITECTURE textures/ + remove live-perf, update SWOT/README/CLAUDE counts", "result": "ok"}
 {"ts": "2026-03-27T00:25:06", "session_id": "2026-03-27T00", "action": "refactor", "detail": "senior-dev-analyze audit: DRY synth (_normalize_peak), add requirements.lock, update DEC-001 limit to 400, fix ARCHITECTURE textures package, update SWOT/README/CLAUDE counts", "result": "ok"}
+{"ts": "2026-04-10T11:03:42", "session_id": "2026-04-10T11", "action": "feat", "detail": "add V004 layer scripts (bass arpeggio, mid pad, shimmer, mix, binaural)", "result": "ok"}
