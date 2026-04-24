@@ -20,6 +20,9 @@ piano = [
     "python-rtmidi>=1.5",
 ]
 
+[tool.setuptools.packages.find]
+include = ["audiomancer*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
