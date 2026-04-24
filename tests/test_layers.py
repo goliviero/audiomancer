@@ -11,6 +11,7 @@ from audiomancer.layers import (
     measure_lufs,
     mix,
     normalize_lufs,
+    normalize_lufs_gated,
     suggest_eq_cuts,
 )
 
@@ -170,3 +171,25 @@ class TestSuggestEqCuts:
         suggestions = suggest_eq_cuts({"a": a, "b": b}, sample_rate=SR)
         for stem, _, _ in suggestions:
             assert stem in ("a", "b")
+
+
+
+class TestNormalizeLufsGated:
+    def test_hits_target(self):
+        import pyloudnorm as pyln
+        # 3s @ 48kHz above pyloudnorm's integration window
+        sr = 48000
+        dur = 3.0
+        t = np.linspace(0, dur, int(dur * sr), endpoint=False)
+        sig = np.column_stack([
+            np.sin(2 * np.pi * 200 * t) * 0.4,
+            np.sin(2 * np.pi * 200 * t + 0.3) * 0.4,
+        ])
+        out = normalize_lufs_gated(sig, target_lufs=-20.0, sample_rate=sr)
+        meter = pyln.Meter(sr)
+        assert abs(meter.integrated_loudness(out) - (-20.0)) < 0.5
+
+    def test_silent_passthrough(self):
+        sig = np.zeros((int(3.0 * 48000), 2))
+        out = normalize_lufs_gated(sig, target_lufs=-20.0, sample_rate=48000)
+        np.testing.assert_array_equal(out, sig)

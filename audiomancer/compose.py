@@ -185,6 +185,43 @@ def make_loopable(stem: np.ndarray,
 
 
 # ---------------------------------------------------------------------------
+# Edge pre-fade (safety fade at file boundaries)
+# ---------------------------------------------------------------------------
+
+def apply_pre_fade(signal: np.ndarray, fade_sec: float = 1.5,
+                   sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Linear fade-in and fade-out at the signal edges.
+
+    Applied after ``make_loopable`` as a safety pass: silences the very first
+    and last samples so a non-looped playback (e.g. file preview) doesn't
+    click. With typical fade_sec ≤ 2 and make_loopable crossfade ≥ 5s,
+    the loop continuity inside the crossfade region is preserved.
+
+    Args:
+        signal: Input signal (mono or stereo).
+        fade_sec: Duration of fade-in / fade-out at each edge.
+        sample_rate: Sample rate.
+
+    Returns:
+        Same-length signal with linear fades at both edges.
+    """
+    n_fade = int(fade_sec * sample_rate)
+    if n_fade <= 0 or signal.shape[0] < 2 * n_fade:
+        return signal
+
+    ramp_in = np.linspace(0.0, 1.0, n_fade)
+    ramp_out = np.linspace(1.0, 0.0, n_fade)
+    out = signal.copy()
+    if out.ndim == 2:
+        out[:n_fade] *= ramp_in[:, np.newaxis]
+        out[-n_fade:] *= ramp_out[:, np.newaxis]
+    else:
+        out[:n_fade] *= ramp_in
+        out[-n_fade:] *= ramp_out
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Loop verification
 # ---------------------------------------------------------------------------
 

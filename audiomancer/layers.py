@@ -201,6 +201,34 @@ def normalize_lufs(signal: np.ndarray, target_lufs: float = -14.0,
     return result
 
 
+def normalize_lufs_gated(signal: np.ndarray, target_lufs: float = -14.0,
+                         sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """BS.1770 GATED LUFS normalization via pyloudnorm.
+
+    Diverges from ``normalize_lufs`` (ungated K-weighted mean) by applying
+    the -70 LUFS absolute + -10 LU relative gates required by BS.1770-4.
+    DAWs, YouTube, Spotify all report the gated value — prefer this when
+    the content has silences (sparse events, long fades) that would bias
+    the ungated mean downward.
+
+    Args:
+        signal: Input signal (mono or stereo).
+        target_lufs: Target integrated loudness in LUFS.
+        sample_rate: Sample rate.
+
+    Returns:
+        Normalized signal.
+    """
+    import pyloudnorm as pyln
+
+    meter = pyln.Meter(sample_rate)
+    current = meter.integrated_loudness(signal)
+    if not np.isfinite(current):
+        return signal
+    gain_db = target_lufs - current
+    return signal * (10 ** (gain_db / 20))
+
+
 def measure_lufs(signal: np.ndarray,
                  sample_rate: int = SAMPLE_RATE) -> float:
     """Measure loudness in LUFS (ITU-R BS.1770-4).

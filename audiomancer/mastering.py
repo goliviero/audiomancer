@@ -140,6 +140,52 @@ def limit(signal: np.ndarray, ceiling_dbtp: float = -1.0,
 
 
 # ---------------------------------------------------------------------------
+# Ambient master chain — no maximizer, preserves target LUFS
+# ---------------------------------------------------------------------------
+
+def ambient_master_chain(signal: np.ndarray,
+                         target_lufs: float,
+                         ceiling_dbtp: float = -3.0,
+                         highpass_hz: float = 30.0,
+                         crossover_hz: float = 100.0,
+                         sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Ambient-safe mastering — no loudness maximizer.
+
+    Use for low-LUFS targets (≤ -18) where ``master_chain``'s limiter
+    would boost loudness by ~10 dB to the ceiling, breaking the target.
+    Chain: highpass → mono bass → gated LUFS normalize → passive peak cap.
+
+    Peak cap is a scalar attenuation (no compression): with typical ambient
+    crest factors (peak ~10-14 dB above LUFS target), the cap rarely engages
+    and the target LUFS is preserved exactly.
+
+    Args:
+        signal: Input signal (mono or stereo).
+        target_lufs: Integrated LUFS target (BS.1770 gated).
+        ceiling_dbtp: Maximum true peak level; scalar cap only.
+        highpass_hz: Subsonic rumble removal cutoff.
+        crossover_hz: Bass mono crossover frequency.
+        sample_rate: Sample rate.
+
+    Returns:
+        Mastered signal at (or below) target_lufs, peak ≤ ceiling_dbtp.
+    """
+    from audiomancer.effects import highpass as _hp
+    from audiomancer.layers import normalize_lufs_gated
+
+    sig = _hp(signal, cutoff_hz=highpass_hz, sample_rate=sample_rate)
+    sig = mono_bass(sig, crossover_hz=crossover_hz, sample_rate=sample_rate)
+    sig = normalize_lufs_gated(sig, target_lufs=target_lufs,
+                               sample_rate=sample_rate)
+
+    ceiling_linear = 10 ** (ceiling_dbtp / 20)
+    peak = np.max(np.abs(sig))
+    if peak > ceiling_linear:
+        sig = sig * (ceiling_linear / peak)
+    return sig
+
+
+# ---------------------------------------------------------------------------
 # Full mastering chain
 # ---------------------------------------------------------------------------
 

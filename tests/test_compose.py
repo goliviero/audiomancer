@@ -3,7 +3,14 @@
 import numpy as np
 import pytest
 
-from audiomancer.compose import density_profile, fade_envelope, make_loopable, stitch, tremolo
+from audiomancer.compose import (
+    apply_pre_fade,
+    density_profile,
+    fade_envelope,
+    make_loopable,
+    stitch,
+    tremolo,
+)
 
 SR = 44100
 DUR = 10.0
@@ -194,3 +201,30 @@ class TestDensityProfile:
     def test_unknown_profile_raises(self):
         with pytest.raises(ValueError, match="Unknown density profile"):
             density_profile(DUR, profile="crazytown", sample_rate=SR)
+
+
+class TestApplyPreFade:
+    def test_edges_silenced(self):
+        sig = np.ones(N)
+        out = apply_pre_fade(sig, fade_sec=0.1, sample_rate=SR)
+        # Very first and very last sample should be ~0
+        assert abs(out[0]) < 1e-6
+        assert abs(out[-1]) < 1e-6
+
+    def test_center_unchanged(self):
+        sig = np.ones(N)
+        out = apply_pre_fade(sig, fade_sec=0.1, sample_rate=SR)
+        # Middle sample should still be 1
+        assert out[N // 2] == 1.0
+
+    def test_stereo(self):
+        sig = np.ones((N, 2))
+        out = apply_pre_fade(sig, fade_sec=0.1, sample_rate=SR)
+        assert out.shape == sig.shape
+        assert abs(out[0, 0]) < 1e-6
+        assert abs(out[-1, 1]) < 1e-6
+
+    def test_zero_fade_is_passthrough(self):
+        sig = np.ones(N)
+        out = apply_pre_fade(sig, fade_sec=0.0, sample_rate=SR)
+        np.testing.assert_array_equal(out, sig)

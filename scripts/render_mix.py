@@ -22,11 +22,16 @@ sys.path.insert(0, str(project_root))
 import numpy as np
 
 from audiomancer.builders import REGISTRY, derived_seed
-from audiomancer.compose import density_profile, make_loopable, verify_loop
+from audiomancer.compose import (
+    apply_pre_fade,
+    density_profile,
+    make_loopable,
+    verify_loop,
+)
 from audiomancer.field import clean
 from audiomancer.layers import mix as mix_layers
 from audiomancer.layers import normalize_lufs
-from audiomancer.mastering import master_chain
+from audiomancer.mastering import ambient_master_chain, master_chain
 from audiomancer.stochastic import micro_events
 from audiomancer.utils import export_wav, load_audio, normalize
 
@@ -93,6 +98,22 @@ def main():
             stems_raw[stem_name] = builder(
                 duration=duration, seed=seed, sample_rate=sr, **sc["params"])
 
+    # --- Per-stem density envelopes (breathing / sparse / arc on specific stems) ---
+    stem_envs = mix_cfg.get("stem_envelopes", {})
+    for stem_name, profile_name in stem_envs.items():
+        if stem_name not in stems_raw:
+            continue
+        print(f"  [env] {stem_name}: {profile_name}")
+        env = density_profile(
+            duration, profile=profile_name,
+            seed=derived_seed(root_seed, f"env_{stem_name}"),
+            sample_rate=sr,
+        )
+        env = env[:stems_raw[stem_name].shape[0]]
+        if stems_raw[stem_name].ndim == 2:
+            env = env[:, np.newaxis]
+        stems_raw[stem_name] = stems_raw[stem_name] * env
+
     # --- Load external samples (firecrack etc.) ---
     firecrack_cfg = mix_cfg.get("firecrack")
     fire_mono = None
@@ -151,10 +172,26 @@ def main():
         )
         stem = stem * profile[:min_len, np.newaxis]
 
-    # --- LUFS + master + loop ---
-    stem = normalize_lufs(stem, target_lufs=meta["target_lufs"], sample_rate=sr)
-    stem = master_chain(stem, sample_rate=sr)
+    # --- Master (default loudness-maximizer, or ambient-safe) ---
+    master_mode = meta.get("master_mode", "default")
+    if master_mode == "ambient":
+        print(f"  [master] ambient ({meta['target_lufs']} LUFS, "
+              f"ceiling {meta.get('ceiling_dbtp', -3.0)} dBTP)")
+        stem = ambient_master_chain(
+            stem, target_lufs=meta["target_lufs"],
+            ceiling_dbtp=meta.get("ceiling_dbtp", -3.0),
+            sample_rate=sr,
+        )
+    else:
+        stem = normalize_lufs(stem, target_lufs=meta["target_lufs"],
+                              sample_rate=sr)
+        stem = master_chain(stem, sample_rate=sr)
+
+    # --- Loop seal + optional pre-fade ---
     stem = make_loopable(stem, crossfade_sec=5.0, sample_rate=sr)
+    pre_fade = meta.get("pre_fade_sec", 0.0)
+    if pre_fade > 0:
+        stem = apply_pre_fade(stem, fade_sec=pre_fade, sample_rate=sr)
 
     score, report = verify_loop(stem, crossfade_sec=5.0, sample_rate=sr)
     quality = "EXCELLENT" if score > 0.85 else "GOOD" if score > 0.7 else "CHECK"
@@ -165,9 +202,11 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     suffix = "_preview" if args.preview else ""
     path = out_dir / f"{args.config}_mix{suffix}.wav"
-    export_wav(stem, path, sample_rate=sr)
+    bit_depth = meta.get("bit_depth", 16)
+    export_wav(stem, path, sample_rate=sr, bit_depth=bit_depth)
     peak_db = 20 * np.log10(np.max(np.abs(stem)) + 1e-10)
-    print(f"\n  -> {path.name}  ({stem.shape[0] / sr:.0f}s, peak={peak_db:.1f} dBFS)")
+    print(f"\n  -> {path.name}  ({stem.shape[0] / sr:.0f}s, peak={peak_db:.1f} dBFS, "
+          f"{bit_depth}-bit)")
 
 
 if __name__ == "__main__":

@@ -16,6 +16,8 @@ pedalboard==0.9.22
     # via audiomancer (pyproject.toml)
 pycparser==3.0
     # via cffi
+pyloudnorm==0.2.0
+    # via audiomancer (pyproject.toml)
 scipy==1.17.1
     # via audiomancer (pyproject.toml)
 soundfile==0.13.1

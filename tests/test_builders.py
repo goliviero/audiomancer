@@ -155,3 +155,60 @@ class TestInstrumentBuilders:
         )
         assert out.ndim == 2
         assert np.max(np.abs(out)) > 0
+
+
+class TestFoundationDrone:
+    def test_smoke(self):
+        sig = REGISTRY["foundation_drone"](
+            duration=DUR, seed=42, sample_rate=SR,
+            freqs=[65.41, 130.81], lp_hz=500.0,
+        )
+        assert sig.ndim == 2
+        assert sig.shape[0] == int(DUR * SR)
+        assert np.max(np.abs(sig)) > 0
+
+
+class TestOchrePad:
+    def test_smoke(self):
+        sig = REGISTRY["ochre_pad"](
+            duration=DUR, seed=42, sample_rate=SR,
+            chord=[(130.81, 0.0), (196.0, -20.0)],
+        )
+        assert sig.ndim == 2
+        assert sig.shape[0] == int(DUR * SR)
+        assert np.max(np.abs(sig)) > 0
+
+
+class TestSparseSampleEvents:
+    def test_smoke_with_temp_wav(self, tmp_path):
+        from audiomancer.synth import sine
+        from audiomancer.utils import export_wav
+
+        # Longer duration needed: event_dur_range min is 18s by default,
+        # so force a shorter range for this smoke test.
+        src = sine(65.41, 1.0, sample_rate=SR)
+        path = tmp_path / "src.wav"
+        export_wav(src, path, sample_rate=SR)
+
+        sig = REGISTRY["sparse_sample_events"](
+            duration=5.0, seed=42, sample_rate=SR,
+            source_path=str(path),
+            source_hz=65.41, target_hz=65.41,
+            event_count=1,
+            event_dur_range=(1.0, 2.0),
+            fade_in_sec=0.5, fade_out_sec=0.5,
+            reverb_wet=0.0,  # skip reverb for speed
+        )
+        assert sig.ndim == 2
+        assert sig.shape[0] == int(5.0 * SR)
+
+
+class TestSubliminalSine:
+    def test_smoke(self):
+        sig = REGISTRY["subliminal_sine"](
+            duration=DUR, seed=42, sample_rate=SR,
+            freq=60.0, tremolo_cycle_sec=0.5, tremolo_depth_db=2.0,
+        )
+        assert sig.ndim == 2
+        assert sig.shape[0] == int(DUR * SR)
+        assert np.max(np.abs(sig)) > 0

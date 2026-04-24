@@ -22,9 +22,9 @@ sys.path.insert(0, str(project_root))
 import numpy as np
 
 from audiomancer.builders import REGISTRY, derived_seed
-from audiomancer.compose import make_loopable, verify_loop
+from audiomancer.compose import apply_pre_fade, make_loopable, verify_loop
 from audiomancer.layers import normalize_lufs
-from audiomancer.mastering import master_chain
+from audiomancer.mastering import ambient_master_chain, master_chain
 from audiomancer.utils import export_wav
 
 
@@ -87,10 +87,22 @@ def main():
     # Build
     raw = builder(duration=duration, seed=stem_seed, sample_rate=sr, **params)
 
-    # Common tail: LUFS -> master -> loop seal
-    stem = normalize_lufs(raw, target_lufs=meta["target_lufs"], sample_rate=sr)
-    stem = master_chain(stem, sample_rate=sr)
+    # Master (default or ambient-safe) -> loop seal -> optional pre-fade
+    master_mode = meta.get("master_mode", "default")
+    if master_mode == "ambient":
+        stem = ambient_master_chain(
+            raw, target_lufs=meta["target_lufs"],
+            ceiling_dbtp=meta.get("ceiling_dbtp", -3.0),
+            sample_rate=sr,
+        )
+    else:
+        stem = normalize_lufs(raw, target_lufs=meta["target_lufs"],
+                              sample_rate=sr)
+        stem = master_chain(stem, sample_rate=sr)
     stem = make_loopable(stem, crossfade_sec=5.0, sample_rate=sr)
+    pre_fade = meta.get("pre_fade_sec", 0.0)
+    if pre_fade > 0:
+        stem = apply_pre_fade(stem, fade_sec=pre_fade, sample_rate=sr)
 
     # Loop check
     score, report = verify_loop(stem, crossfade_sec=5.0, sample_rate=sr)
@@ -102,9 +114,11 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     suffix = "_preview" if args.preview else ""
     path = out_dir / f"{args.config}_{args.stem}{suffix}.wav"
-    export_wav(stem, path, sample_rate=sr)
+    bit_depth = meta.get("bit_depth", 16)
+    export_wav(stem, path, sample_rate=sr, bit_depth=bit_depth)
     peak_db = 20 * np.log10(np.max(np.abs(stem)) + 1e-10)
-    print(f"  -> {path.name}  ({stem.shape[0] / sr:.0f}s, peak={peak_db:.1f} dBFS)")
+    print(f"  -> {path.name}  ({stem.shape[0] / sr:.0f}s, peak={peak_db:.1f} dBFS, "
+          f"{bit_depth}-bit)")
 
 
 if __name__ == "__main__":

@@ -26,11 +26,13 @@ from audiomancer.modulation import (
     apply_amplitude_mod,
     apply_filter_sweep,
     evolving_lfo,
+    lfo_sine,
     multi_lfo,
     random_walk,
 )
+from audiomancer.saturation import tape_saturate
 from audiomancer.spatial import auto_pan, haas_width
-from audiomancer.synth import sine, triangle
+from audiomancer.synth import chord_pad, sine, triangle
 from audiomancer.utils import mono_to_stereo
 
 
@@ -424,6 +426,259 @@ def piano_processed(duration: float, seed: int, sample_rate: int,
 
 
 # ---------------------------------------------------------------------------
+# Foundation drone — deep, zero-transient sine pair with slow amp breath
+# ---------------------------------------------------------------------------
+
+def foundation_drone(duration: float, seed: int, sample_rate: int,
+                     freqs: list[float],
+                     detune_cents: float = 3.0,
+                     lp_hz: float = 500.0,
+                     amp_mod_cycle_sec: float = 22.0,
+                     amp_mod_depth_db: float = 1.0,
+                     reverb_room: float = 0.55,
+                     reverb_wet: float = 0.18) -> np.ndarray:
+    """Continuous tectonic drone — detuned sine pairs, heavy lowpass, slow breath.
+
+    Designed as the bedrock layer of a grounding ambient piece. No attack
+    transient (pure continuous sines), no filter sweep, minimal reverb. The
+    only motion is a ±amp_mod_depth_db volume breath over amp_mod_cycle_sec.
+
+    Args:
+        freqs: Fundamental frequencies (Hz). Each gets a detuned partner.
+        detune_cents: Cents offset for the detuned partner (±).
+        lp_hz: Lowpass cutoff. Keep ≤600Hz for sub-domain only.
+        amp_mod_cycle_sec: Period of the slow amplitude breath.
+        amp_mod_depth_db: ± dB of the breath modulation.
+    """
+    rng = np.random.default_rng(seed)
+    n = int(duration * sample_rate)
+    signal = np.zeros(n)
+
+    for i, freq in enumerate(freqs):
+        phase_jitter = rng.uniform(0, 2 * np.pi)
+        partner_cents = detune_cents * (1 if i % 2 == 0 else -1)
+        partner_freq = freq * 2 ** (partner_cents / 1200)
+        t = np.linspace(0, duration, n, endpoint=False)
+        signal += np.sin(2 * np.pi * freq * t + phase_jitter)
+        signal += np.sin(2 * np.pi * partner_freq * t + phase_jitter * 0.7)
+
+    peak = np.max(np.abs(signal))
+    if peak > 0:
+        signal = signal * 0.8 / peak
+
+    signal = lowpass(signal, cutoff_hz=lp_hz, sample_rate=sample_rate)
+    stereo = mono_to_stereo(signal)
+
+    # Slow volume breath: convert dB to linear depth
+    depth_linear = 10 ** (amp_mod_depth_db / 20) - 1.0
+    breath = lfo_sine(
+        duration, rate_hz=1.0 / amp_mod_cycle_sec,
+        depth=depth_linear, offset=1.0, sample_rate=sample_rate,
+    )
+    stereo = apply_amplitude_mod(stereo, breath)
+
+    stereo = reverb(stereo, room_size=reverb_room, damping=0.75,
+                    wet_level=reverb_wet, sample_rate=sample_rate)
+    return stereo
+
+
+# ---------------------------------------------------------------------------
+# Ochre pad — warm chord with hinted accent note + tape saturation
+# ---------------------------------------------------------------------------
+
+def ochre_pad(duration: float, seed: int, sample_rate: int,
+              chord: list[tuple[float, float]],
+              voices: int = 4,
+              detune_cents: float = 12.0,
+              lp_hz: float = 3000.0,
+              sat_drive: float = 1.1,
+              breath_cycle_sec: float = 28.0,
+              breath_depth: float = 0.04,
+              reverb_room: float = 0.7,
+              reverb_wet: float = 0.38) -> np.ndarray:
+    """Warm organic pad — stacked detuned voices with tape saturation.
+
+    Each chord entry is ``(hz, volume_db)``: 0 dB for the main voice, negative
+    for hinted-below-audibility accents. Chain: per-note chord_pad (detuned
+    sines) → sum → tape saturation (even harmonics = warmth) → lowpass →
+    slow breathing → reverb.
+
+    Args:
+        chord: List of (freq_hz, volume_db) tuples. The main audible pitch
+            should have volume_db close to 0; accent tones go negative
+            (e.g. -20dB for "felt more than heard" perfect-fifth hint).
+        sat_drive: Tape saturation drive (1.0 = gentle, 1.5-1.7 = warm body).
+    """
+    signal = np.zeros(int(duration * sample_rate))
+    for i, (freq, vol_db) in enumerate(chord):
+        gain = 10 ** (vol_db / 20)
+        voice = chord_pad([freq], duration, voices=voices,
+                          detune_cents=detune_cents, amplitude=0.7,
+                          seed=seed + i * 101, jitter_cents=2.0,
+                          sample_rate=sample_rate)
+        signal += gain * voice
+
+    peak = np.max(np.abs(signal))
+    if peak > 0:
+        signal = signal * 0.85 / peak
+
+    # Tape saturation — even-order harmonics for warmth, no brightness
+    signal = tape_saturate(signal, drive=sat_drive, asymmetry=0.18)
+
+    # Lowpass after saturation to tame any harmonics saturation added
+    signal = lowpass(signal, cutoff_hz=lp_hz, sample_rate=sample_rate)
+    stereo = mono_to_stereo(signal)
+
+    # Slow breath — barely moving
+    breath = lfo_sine(
+        duration, rate_hz=1.0 / breath_cycle_sec,
+        depth=breath_depth, offset=1.0, sample_rate=sample_rate,
+    )
+    stereo = apply_amplitude_mod(stereo, breath)
+
+    stereo = reverb(stereo, room_size=reverb_room, damping=0.55,
+                    wet_level=reverb_wet, sample_rate=sample_rate)
+    return stereo
+
+
+# ---------------------------------------------------------------------------
+# Sparse sample events — place 1-N pitched sample copies with long fades
+# ---------------------------------------------------------------------------
+
+def sparse_sample_events(duration: float, seed: int, sample_rate: int,
+                         source_path: str,
+                         source_hz: float,
+                         target_hz: float,
+                         event_count: int = 2,
+                         event_dur_range: tuple[float, float] = (18.0, 25.0),
+                         fade_in_sec: float = 18.0,
+                         fade_out_sec: float = 20.0,
+                         pitch_drift_cents: float = 30.0,
+                         stereo_width: float = 0.15,
+                         hp_hz: float = 40.0,
+                         lp_hz: float = 4000.0,
+                         reverb_room: float = 0.6,
+                         reverb_wet: float = 0.35) -> np.ndarray:
+    """Place N sparse long-fade sample events across a duration.
+
+    Each event: pitch-shift source by ±pitch_drift_cents, tile-or-trim to a
+    random duration in event_dur_range, apply long fade_in/fade_out, pan by
+    ±stereo_width, HP/LP band-limit. Events are placed at non-overlapping
+    random positions. Silence between events is intentional.
+
+    Args:
+        source_path: Path to source WAV (relative to project root).
+        source_hz: Native pitch of the sample.
+        target_hz: Center pitch for events.
+        event_count: Number of events to place (1-N).
+        event_dur_range: (min, max) duration of each event in seconds.
+        fade_in_sec / fade_out_sec: Long linear fades per event.
+        pitch_drift_cents: ± cents jitter per event.
+        stereo_width: Pan range per event (0.0 = centered, 0.15 = ±15%).
+    """
+    from pathlib import Path
+
+    from audiomancer.sampler import play_note
+    from audiomancer.utils import load_audio
+
+    rng = np.random.default_rng(seed)
+    n_total = int(duration * sample_rate)
+    output = np.zeros((n_total, 2))
+
+    sig, _ = load_audio(Path(source_path), target_sr=sample_rate)
+    if sig.ndim == 2:
+        sig = sig.mean(axis=1)
+
+    # Schedule non-overlapping event windows
+    events = []
+    attempts = 0
+    while len(events) < event_count and attempts < 200:
+        attempts += 1
+        evt_dur = rng.uniform(*event_dur_range)
+        start_max = duration - evt_dur
+        if start_max <= 0:
+            break
+        start = rng.uniform(0.0, start_max)
+        window = (start, start + evt_dur)
+        overlap = any(not (window[1] < e[0] or window[0] > e[1])
+                      for e in events)
+        if overlap:
+            continue
+        events.append(window)
+
+    for start, end in events:
+        evt_dur = end - start
+        drift = rng.uniform(-pitch_drift_cents, pitch_drift_cents)
+        evt_hz = target_hz * 2 ** (drift / 1200)
+
+        # Pitch-shift + tile/trim to evt_dur
+        shifted = play_note(sig, source_hz=source_hz, target_hz=evt_hz,
+                            duration_sec=evt_dur, amplitude=0.85,
+                            sample_rate=sample_rate)
+
+        # Band-limit
+        shifted = highpass(shifted, cutoff_hz=hp_hz, sample_rate=sample_rate)
+        shifted = lowpass(shifted, cutoff_hz=lp_hz, sample_rate=sample_rate)
+
+        # Long fades
+        n_evt = int(evt_dur * sample_rate)
+        n_fi = min(int(fade_in_sec * sample_rate), n_evt // 2)
+        n_fo = min(int(fade_out_sec * sample_rate), n_evt - n_fi)
+        env = np.ones(n_evt)
+        env[:n_fi] = np.linspace(0.0, 1.0, n_fi)
+        env[-n_fo:] = np.linspace(1.0, 0.0, n_fo)
+        shifted = shifted[:n_evt] * env
+
+        # Pan ±stereo_width (constant-power)
+        pan = rng.uniform(-stereo_width, stereo_width)
+        left_gain = np.cos((pan + 1) * np.pi / 4)
+        right_gain = np.sin((pan + 1) * np.pi / 4)
+        stereo_evt = np.column_stack([shifted * left_gain,
+                                      shifted * right_gain])
+
+        # Place
+        start_s = int(start * sample_rate)
+        end_s = min(start_s + len(stereo_evt), n_total)
+        output[start_s:end_s] += stereo_evt[:end_s - start_s]
+
+    if reverb_wet > 0:
+        output = reverb(output, room_size=reverb_room, damping=0.6,
+                        wet_level=reverb_wet, sample_rate=sample_rate)
+    return output
+
+
+# ---------------------------------------------------------------------------
+# Subliminal sine — felt-more-than-heard low hum with slow tremolo
+# ---------------------------------------------------------------------------
+
+def subliminal_sine(duration: float, seed: int, sample_rate: int,
+                    freq: float = 60.0,
+                    tremolo_cycle_sec: float = 25.0,
+                    tremolo_depth_db: float = 2.0) -> np.ndarray:
+    """Pure low sine with slow amplitude tremolo — meant to sit far below mix.
+
+    Output is peak-normalized to 0.5 — the mix level controls how subliminal
+    it actually becomes (target -30dB below main layers).
+
+    Args:
+        freq: Fundamental (typically 60Hz for Earth / Schumann-adjacent).
+        tremolo_cycle_sec: Period of the tremolo cycle.
+        tremolo_depth_db: ± dB depth of the tremolo.
+    """
+    rng = np.random.default_rng(seed)
+    phase = rng.uniform(0, 2 * np.pi)
+    t = np.linspace(0, duration, int(duration * sample_rate), endpoint=False)
+    signal = 0.5 * np.sin(2 * np.pi * freq * t + phase)
+
+    stereo = mono_to_stereo(signal)
+    depth_linear = 10 ** (tremolo_depth_db / 20) - 1.0
+    trem = lfo_sine(duration, rate_hz=1.0 / tremolo_cycle_sec,
+                    depth=depth_linear, offset=1.0, sample_rate=sample_rate)
+    stereo = apply_amplitude_mod(stereo, trem)
+    return stereo
+
+
+# ---------------------------------------------------------------------------
 # Registry — string key -> builder function
 # ---------------------------------------------------------------------------
 
@@ -437,4 +692,8 @@ REGISTRY = {
     "morph_textures": morph_textures,
     "instrument_synth": instrument_synth,
     "instrument_sampled": instrument_sampled,
+    "foundation_drone": foundation_drone,
+    "ochre_pad": ochre_pad,
+    "sparse_sample_events": sparse_sample_events,
+    "subliminal_sine": subliminal_sine,
 }

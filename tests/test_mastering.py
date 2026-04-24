@@ -2,7 +2,13 @@
 
 import numpy as np
 
-from audiomancer.mastering import limit, master_chain, mono_bass, soft_clip
+from audiomancer.mastering import (
+    ambient_master_chain,
+    limit,
+    master_chain,
+    mono_bass,
+    soft_clip,
+)
 
 SR = 44100
 DUR = 2.0
@@ -200,3 +206,37 @@ class TestSoftClipCascade:
         threshold = 10 ** (-3.0 / 20)
         ref = np.tanh(sig / threshold) * threshold
         assert np.allclose(legacy, ref, atol=1e-9)
+
+
+class TestAmbientMasterChain:
+    """Ambient master must preserve target LUFS (no maximizer upward-gain)."""
+
+    def test_hits_target_lufs(self):
+        import pyloudnorm as pyln
+        # 3s @ 48kHz, well above pyloudnorm's 0.4s integration window
+        sr = 48000
+        dur = 3.0
+        t = np.linspace(0, dur, int(dur * sr), endpoint=False)
+        sig = np.column_stack([
+            np.sin(2 * np.pi * 200 * t) * 0.3,
+            np.sin(2 * np.pi * 200 * t + 0.3) * 0.3,
+        ])
+        result = ambient_master_chain(sig, target_lufs=-20.0,
+                                      ceiling_dbtp=-3.0, sample_rate=sr)
+        meter = pyln.Meter(sr)
+        measured = meter.integrated_loudness(result)
+        assert abs(measured - (-20.0)) < 0.5, (
+            f"LUFS should hit -20 ± 0.5, got {measured:.2f}"
+        )
+
+    def test_peak_below_ceiling(self):
+        sr = 48000
+        dur = 3.0
+        t = np.linspace(0, dur, int(dur * sr), endpoint=False)
+        # Loud signal forces peak cap to engage
+        sig = np.column_stack([np.sin(2 * np.pi * 200 * t),
+                               np.sin(2 * np.pi * 200 * t)])
+        result = ambient_master_chain(sig, target_lufs=-6.0,
+                                      ceiling_dbtp=-3.0, sample_rate=sr)
+        ceiling = 10 ** (-3.0 / 20)
+        assert np.max(np.abs(result)) <= ceiling + 1e-6
