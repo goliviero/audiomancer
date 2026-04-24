@@ -53,6 +53,44 @@ Examples :
 - **Freesound.org** with CC0 filter — e.g., current `firecrack` in `inbox/`
 - **Radio Aporee** (CC0 recordings) — https://radio.aporee.org/
 
+### Ethnic instruments (single-shot samples)
+
+With `audiomancer.sampler`, a single-note WAV can be played at any pitch
+via pitch-shift (high-quality scipy polyphase), and transformed into long
+ambient pads via `pitched_pad()` (pitch-shift + paulstretch). You DO NOT
+need a full multisample library — one good sample per instrument is enough
+for ambient use.
+
+Recommended CC0 / freely downloadable sources:
+
+- **Freesound.org** — filter by License = CC0 + search term. Quality varies,
+  check for clean recordings without room noise.
+  - Search: `handpan`, `hang drum`, `oud`, `sitar`, `darbuka`,
+    `didgeridoo`, `tanpura`, `sarangi`, `kalimba`, `singing bowl`.
+- **FreePats** — https://freepats.zenvoid.org/ — CC0 / CC-BY instrument
+  patches (soundfonts / samples). Good for sitar, sarangi, some world
+  percussion.
+- **Philharmonia orchestra** — https://philharmonia.co.uk/resources/sound-samples/
+  — CC-BY clean single-note WAV, full chromatic range (attribution required
+  in YouTube descriptions).
+
+### Naming convention for multisample support
+
+If you have multiple pitches of the same instrument:
+
+    samples/cc0/handpan_D3.wav
+    samples/cc0/handpan_A3.wav
+    samples/cc0/handpan_F4.wav
+
+Then in Python:
+
+    from audiomancer.sampler import load_multisample, play_note_multisample
+    bank = load_multisample("handpan")
+    note = play_note_multisample(bank, target_hz=220.0)  # auto-picks closest
+
+Single-sample still works fine: just drop `handpan_D3.wav` and use
+`builders.instrument_sampled` with `source_hz=146.83`.
+
 ## Your own recordings
 
 Drop them into `samples/own/`. Recommendation :

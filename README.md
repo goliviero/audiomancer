@@ -84,6 +84,8 @@ export_wav(master, "output/layered_mix.wav")
 | `effects` | Scipy filters (LP/HP) + pedalboard (reverb, delay, chorus, compression) + `delay_pingpong` |
 | `ir_reverb` | Convolution reverb: `load_ir`, `convolve_reverb`, 4 synthetic presets (room/hall/cathedral/plate) |
 | `sidechain` | Envelope follower + ducking compressor — make pads breathe when chimes emerge |
+| `instruments` | Synthetic ethnic: didgeridoo, handpan, oud, sitar, derbouka_hit + derbouka_pattern |
+| `sampler` | Load any CC0 sample + pitch-shift (polyphase) + `pitched_pad` (pitch + paulstretch) + multisample loader |
 | `layers` | Mix signals, layer stems, crossfade, LUFS normalization, **suggest_eq_cuts** (masking detector) |
 | `field` | Field recording processing: cleanup, noise gate, reverb, fades |
 | `utils` | WAV I/O (auto-resample), normalize, fade in/out, mono/stereo conversion, `load_sample()` |

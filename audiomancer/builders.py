@@ -311,6 +311,67 @@ def texture(duration: float, seed: int, sample_rate: int,
 
 
 # ---------------------------------------------------------------------------
+# Instrument synth / sampled — ethnic instruments as builders
+# ---------------------------------------------------------------------------
+
+def instrument_synth(duration: float, seed: int, sample_rate: int,
+                     name: str, **params) -> np.ndarray:
+    """Synthetic ethnic instrument: didgeridoo / handpan / oud / sitar / derbouka_pattern."""
+    from audiomancer import instruments as _inst
+    from audiomancer.utils import mono_to_stereo
+
+    fn_map = {
+        "didgeridoo": _inst.didgeridoo,
+        "handpan": _inst.handpan,
+        "oud": _inst.oud,
+        "sitar": _inst.sitar,
+        "derbouka_pattern": _inst.derbouka_pattern,
+    }
+    if name not in fn_map:
+        raise ValueError(
+            f"Unknown instrument {name!r}. Valid: {list(fn_map)}"
+        )
+    mono = fn_map[name](duration_sec=duration, seed=seed,
+                        sample_rate=sample_rate, **params)
+    return mono_to_stereo(mono)
+
+
+def instrument_sampled(duration: float, seed: int, sample_rate: int,
+                       source_path: str, source_hz: float, target_hz: float,
+                       mode: str = "pad", **params) -> np.ndarray:
+    """Load a CC0 sample, pitch-shift to target_hz, optionally paulstretch.
+
+    Args:
+        source_path: Path to WAV (relative to project root).
+        source_hz: Native pitch of the sample.
+        target_hz: Desired pitch.
+        mode: 'note' (preserve timbre via pitch-shift) or 'pad' (pitch-shift
+              + paulstretch into a long ambient pad).
+    """
+    from pathlib import Path
+
+    from audiomancer.sampler import pitched_pad, play_note
+    from audiomancer.utils import load_audio, mono_to_stereo
+
+    sig, _ = load_audio(Path(source_path), target_sr=sample_rate)
+
+    if mode == "note":
+        out = play_note(sig, source_hz=source_hz, target_hz=target_hz,
+                        duration_sec=duration, sample_rate=sample_rate,
+                        **params)
+    elif mode == "pad":
+        out = pitched_pad(sig, source_hz=source_hz, target_hz=target_hz,
+                          duration_sec=duration, seed=seed,
+                          sample_rate=sample_rate, **params)
+    else:
+        raise ValueError(f"mode must be 'note' or 'pad', got {mode!r}")
+
+    if out.ndim == 1:
+        out = mono_to_stereo(out)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Piano processed — load a recorded piano WAV + apply a piano_presets preset
 # ---------------------------------------------------------------------------
 
@@ -374,4 +435,6 @@ REGISTRY = {
     "texture": texture,
     "piano_processed": piano_processed,
     "morph_textures": morph_textures,
+    "instrument_synth": instrument_synth,
+    "instrument_sampled": instrument_sampled,
 }

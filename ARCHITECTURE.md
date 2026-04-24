@@ -17,6 +17,9 @@ audiomancer/
 │   ├── ir_reverb.py         # Convolution reverb: load_ir + convolve_reverb + 4 synthetic presets
 │   ├── sidechain.py         # envelope_follower + sidechain_duck (ducking compressor)
 │   ├── saturation.py        # tape_saturate (asymmetric soft-clip) + tape_hiss + vinyl_wow (pitch flutter)
+│   ├── instruments.py       # Synthetic ethnic: didgeridoo / handpan / oud / sitar / derbouka_hit / derbouka_pattern
+│   ├── sampler.py           # play_note (polyphase pitch-shift) + pitched_pad (pitch + paulstretch)
+│   │                        # load_multisample / play_note_multisample (auto-picks closest pitch)
 │   ├── layers.py            # mix (dB), layer (linear), crossfade, loop_seamless
 │   │                        # normalize_lufs (K-weighted ITU-R BS.1770), measure_lufs
 │   │                        # suggest_eq_cuts (anti-masking advisor via spectral_balance)
@@ -35,8 +38,8 @@ audiomancer/
 │   │                        # micro_silence_env (multiplicative duck envelope)
 │   ├── builders.py          # Parametric stem generators for config-driven rendering
 │   │                        # REGISTRY: pad_alive, arpege_bass, pendulum_bass, binaural_beat,
-│   │                        #          texture (wraps any textures/ preset), piano_processed,
-│   │                        #          morph_textures (spectral A->B transition)
+│   │                        #          texture, piano_processed, morph_textures,
+│   │                        #          instrument_synth (ethnic 5), instrument_sampled (CC0 WAV + pitch-shift)
 │   │                        # derived_seed helper for per-role stem coordination
 │   ├── piano_presets.py     # 3 piano processing presets (bass_drone/mid_pad/sparse_notes)
 │   │                        # Shared between scripts/piano/process_piano.py and builders.piano_processed

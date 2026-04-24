@@ -108,3 +108,50 @@ class TestMorphTextures:
         )
         assert out.ndim == 2
         assert np.max(np.abs(out)) > 0
+
+
+class TestInstrumentBuilders:
+    def test_registry(self):
+        assert "instrument_synth" in REGISTRY
+        assert "instrument_sampled" in REGISTRY
+
+    def test_synth_didgeridoo(self):
+        out = REGISTRY["instrument_synth"](
+            duration=0.5, seed=42, sample_rate=SR,
+            name="didgeridoo", frequency=73.0,
+        )
+        assert out.ndim == 2
+        assert np.max(np.abs(out)) > 0
+
+    def test_synth_unknown_raises(self):
+        import pytest
+        with pytest.raises(ValueError, match="Unknown instrument"):
+            REGISTRY["instrument_synth"](
+                duration=0.5, seed=42, sample_rate=SR,
+                name="bagpipes",
+            )
+
+    def test_sampled_requires_file(self):
+        import pytest
+        with pytest.raises(FileNotFoundError):
+            REGISTRY["instrument_sampled"](
+                duration=0.5, seed=42, sample_rate=SR,
+                source_path="samples/own/nope.wav",
+                source_hz=220.0, target_hz=330.0, mode="note",
+            )
+
+    def test_sampled_note_mode(self, tmp_path):
+        from audiomancer.synth import sine
+        from audiomancer.utils import export_wav
+
+        src = sine(220.0, 1.0, sample_rate=SR)
+        path = tmp_path / "inst.wav"
+        export_wav(src, path, sample_rate=SR)
+
+        out = REGISTRY["instrument_sampled"](
+            duration=0.5, seed=42, sample_rate=SR,
+            source_path=str(path),
+            source_hz=220.0, target_hz=440.0, mode="note",
+        )
+        assert out.ndim == 2
+        assert np.max(np.abs(out)) > 0
