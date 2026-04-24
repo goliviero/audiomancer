@@ -133,8 +133,9 @@ def load_audio(path: str | Path,
         raise RuntimeError(f"Cannot read {path} — unsupported or corrupted file: {e}") from e
 
     if target_sr is not None and sr != target_sr:
-        from scipy.signal import resample_poly
         from math import gcd
+
+        from scipy.signal import resample_poly
         g = gcd(target_sr, sr)
         up, down = target_sr // g, sr // g
         if data.ndim == 2:

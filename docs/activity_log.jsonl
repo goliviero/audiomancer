@@ -10,3 +10,4 @@
 {"ts": "2026-04-24T12:36:01", "session_id": "2026-04-24T12", "action": "refactor", "detail": "config-driven renderer (configs/V005.py + render_stem/render_mix) + piano workflow (record/render_midi/process_piano) + docs resync", "result": "ok"}
 {"ts": "2026-04-24T13:14:33", "session_id": "2026-04-24T13", "action": "feat", "detail": "roadmap expansion: texture+piano_processed builders, Karplus-Strong, Paulstretch, saturation.py, MIDI live-monitor + quantize", "result": "ok"}
 {"ts": "2026-04-24T13:20:19", "session_id": "2026-04-24T13", "action": "bug_fixed", "detail": "fix(ci): add setuptools find directive in pyproject.toml to exclude configs/ and samples/ from package discovery", "result": "ok"}
+{"ts": "2026-04-24T13:23:12", "session_id": "2026-04-24T13", "action": "fix", "detail": "CI lint: remove dead return + ruff I001 auto-fix imports, ship gallery_v2 script", "result": "ok"}

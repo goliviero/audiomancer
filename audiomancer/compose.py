@@ -341,7 +341,7 @@ def density_profile(duration_sec: float, profile: str = "flat",
             pos = end
             state = 0.3 if state > 0.5 else 1.0
         # Smooth transitions with 2s crossfade
-        from scipy.signal import sosfiltfilt, butter
+        from scipy.signal import butter, sosfiltfilt
         sos = butter(2, 0.5 / (sample_rate / 2), btype="low", output="sos")
         env = sosfiltfilt(sos, env)
         return np.clip(env, 0.0, 1.0)
@@ -350,5 +350,3 @@ def density_profile(duration_sec: float, profile: str = "flat",
         f"Unknown density profile: {profile!r}. "
         "Valid: flat, breathing, arc, random_walk, sparse."
     )
-
-    return score, report

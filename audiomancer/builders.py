@@ -326,6 +326,7 @@ def piano_processed(duration: float, seed: int, sample_rate: int,
     Returns stereo ndarray ready for LUFS + master chain.
     """
     from pathlib import Path
+
     from audiomancer.piano_presets import PRESETS
     from audiomancer.utils import load_audio
 

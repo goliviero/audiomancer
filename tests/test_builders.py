@@ -81,8 +81,8 @@ class TestPianoProcessed:
 
     def test_smoke_with_temp_wav(self, tmp_path):
         """Generate a short sine, save, feed through the builder."""
-        from audiomancer.utils import export_wav
         from audiomancer.synth import sine
+        from audiomancer.utils import export_wav
         src = sine(440.0, 2.0, amplitude=0.3, sample_rate=SR)
         path = tmp_path / "piano_test.wav"
         export_wav(src, path, sample_rate=SR)
