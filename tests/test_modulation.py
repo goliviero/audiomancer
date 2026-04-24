@@ -9,6 +9,8 @@ from audiomancer.modulation import (
     evolving_lfo,
     lfo_sine,
     lfo_triangle,
+    multi_lfo,
+    random_walk,
 )
 
 SR = 44100
@@ -119,3 +121,64 @@ class TestApplyFilterSweep:
         mod = np.full(SR, 1000.0)
         result = apply_filter_sweep(signal, mod, sample_rate=SR)
         assert result.shape == signal.shape
+
+
+class TestMultiLfo:
+    """Phase D1: multi-scale LFO stack."""
+
+    def test_shape(self):
+        env = multi_lfo(DUR, sample_rate=SR)
+        assert env.shape == (int(SR * DUR),)
+
+    def test_centered_around_one(self):
+        env = multi_lfo(DUR, seed=42, sample_rate=SR)
+        assert 0.8 < np.mean(env) < 1.2
+
+    def test_deterministic_with_seed(self):
+        a = multi_lfo(DUR, seed=42, sample_rate=SR)
+        b = multi_lfo(DUR, seed=42, sample_rate=SR)
+        assert np.allclose(a, b)
+
+    def test_differs_with_seed(self):
+        a = multi_lfo(DUR, seed=42, sample_rate=SR)
+        b = multi_lfo(DUR, seed=99, sample_rate=SR)
+        # Phases differ -> envelopes should NOT be identical
+        assert not np.allclose(a, b)
+        # Correlation should stay below strong-match threshold
+        assert np.corrcoef(a, b)[0, 1] < 0.9
+
+    def test_custom_layers(self):
+        env = multi_lfo(DUR, layers=[(1.0, 0.1), (0.2, 0.05)],
+                        seed=42, sample_rate=SR)
+        assert env.shape == (int(SR * DUR),)
+        assert 0.8 < np.mean(env) < 1.2
+
+
+class TestRandomWalk:
+    """Phase D2: Ornstein-Uhlenbeck bounded walk."""
+
+    def test_shape(self):
+        env = random_walk(DUR, sample_rate=SR)
+        assert env.shape == (int(SR * DUR),)
+
+    def test_mean_near_one(self):
+        # Over long enough duration the mean should approach 1.0
+        env = random_walk(10.0, sigma=0.05, tau=1.0, seed=42, sample_rate=SR)
+        assert 0.9 < np.mean(env) < 1.1
+
+    def test_bounded(self):
+        # 3 sigma effective envelope should rarely exceed the stationary std
+        # stationary_std = sigma * sqrt(tau/2), here ~= 0.05*sqrt(0.5) = 0.035
+        env = random_walk(10.0, sigma=0.05, tau=1.0, seed=42, sample_rate=SR)
+        assert np.max(env) < 1.5
+        assert np.min(env) > 0.5
+
+    def test_deterministic_with_seed(self):
+        a = random_walk(DUR, seed=42, sample_rate=SR)
+        b = random_walk(DUR, seed=42, sample_rate=SR)
+        assert np.allclose(a, b)
+
+    def test_differs_with_seed(self):
+        a = random_walk(DUR, seed=42, sample_rate=SR)
+        b = random_walk(DUR, seed=99, sample_rate=SR)
+        assert not np.allclose(a, b)

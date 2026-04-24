@@ -12,3 +12,7 @@ dist/
 
 # Claude Code local settings (VS Code workaround)
 .claude/settings.json
+
+# Samples bank — audio files stay local (README.md is tracked, see above *.wav rule)
+samples/cc0/
+samples/own/

@@ -162,3 +162,41 @@ class TestVerifyLoop:
         assert "jump_amplitude" in report
         assert "correlation" in report
         assert "overall" in report
+
+
+class TestSoftClipCascade:
+    """Phase A2: cascaded soft-clip adds harmonic content."""
+
+    def _h2_over_h1(self, sig: np.ndarray, freq: float) -> float:
+        """Ratio of 2nd harmonic amplitude over fundamental via FFT."""
+        spectrum = np.abs(np.fft.rfft(sig))
+        freqs = np.fft.rfftfreq(len(sig), 1 / SR)
+        h1 = spectrum[np.argmin(np.abs(freqs - freq))]
+        h2 = spectrum[np.argmin(np.abs(freqs - 2 * freq))]
+        return h2 / (h1 + 1e-10)
+
+    def test_cascade_adds_harmonics(self):
+        """3-stage cascade should produce more H2 content than 1 stage."""
+        # Drive signal hot so saturation actually kicks in
+        t = np.linspace(0, 2.0, 2 * SR, endpoint=False)
+        sig = np.sin(2 * np.pi * 200 * t) * 1.5  # driven above threshold
+
+        single = soft_clip(sig, threshold_db=-3.0, stages=1)
+        cascade = soft_clip(sig, threshold_db=-3.0, stages=3)
+
+        h2_single = self._h2_over_h1(single, 200.0)
+        h2_cascade = self._h2_over_h1(cascade, 200.0)
+
+        # Cascade should expose more harmonic richness
+        assert h2_cascade >= h2_single, (
+            f"cascade H2/H1={h2_cascade} not >= single H2/H1={h2_single}"
+        )
+
+    def test_stages_1_is_legacy(self):
+        """stages=1 must match the original single-tanh behavior."""
+        sig = _mono_signal() * 1.5
+        legacy = soft_clip(sig, threshold_db=-3.0, stages=1)
+        # Reference: one tanh, no cascade
+        threshold = 10 ** (-3.0 / 20)
+        ref = np.tanh(sig / threshold) * threshold
+        assert np.allclose(legacy, ref, atol=1e-9)

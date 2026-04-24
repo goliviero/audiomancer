@@ -116,3 +116,38 @@ class TestChordPad:
     def test_chord_pad_single_note(self):
         sig = chord_pad([440.0], 1.0, voices=1, sample_rate=SR)
         assert sig.shape == (SR,)
+
+
+class TestVoiceJitter:
+    """Phase A1: seeded voice jitter in pad + chord_pad."""
+
+    def test_pad_jitter_deterministic(self):
+        a = pad(220.0, 1.0, voices=4, detune_cents=10.0,
+                seed=42, jitter_cents=3.0, sample_rate=SR)
+        b = pad(220.0, 1.0, voices=4, detune_cents=10.0,
+                seed=42, jitter_cents=3.0, sample_rate=SR)
+        assert np.allclose(a, b), "Same seed must give identical signal"
+
+    def test_pad_jitter_changes_with_seed(self):
+        a = pad(220.0, 1.0, voices=4, detune_cents=10.0,
+                seed=42, jitter_cents=3.0, sample_rate=SR)
+        b = pad(220.0, 1.0, voices=4, detune_cents=10.0,
+                seed=99, jitter_cents=3.0, sample_rate=SR)
+        # Different seeds -> signals must differ noticeably
+        assert not np.allclose(a, b)
+        assert np.corrcoef(a, b)[0, 1] < 0.99
+
+    def test_pad_no_jitter_is_legacy(self):
+        """jitter_cents=0.0 must match pre-A1 behavior exactly."""
+        a = pad(220.0, 1.0, voices=4, detune_cents=10.0, sample_rate=SR)
+        b = pad(220.0, 1.0, voices=4, detune_cents=10.0,
+                seed=42, jitter_cents=0.0, sample_rate=SR)
+        assert np.allclose(a, b)
+
+    def test_chord_pad_per_note_jitter(self):
+        # Each note gets its own jitter sequence (seed + i*101)
+        a = chord_pad([220.0, 330.0, 440.0], 1.0, voices=3,
+                      seed=42, jitter_cents=2.0, sample_rate=SR)
+        b = chord_pad([220.0, 330.0, 440.0], 1.0, voices=3,
+                      seed=99, jitter_cents=2.0, sample_rate=SR)
+        assert not np.allclose(a, b)

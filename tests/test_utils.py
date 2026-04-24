@@ -119,3 +119,62 @@ class TestDuration:
     def test_stereo(self):
         sig = np.ones((SR * 3, 2))
         assert duration(sig, sample_rate=SR) == pytest.approx(3.0)
+
+
+class TestLoadAudioResample:
+    """Phase A3: target_sr triggers polyphase resample."""
+
+    def test_resample_mono_44100_to_48000(self):
+        """A 1s @ 44.1kHz file should return 48000 samples at target_sr=48000."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "test_441.wav"
+            src_sr = 44100
+            src_dur = 1.0
+            sig = np.sin(2 * np.pi * 440 * np.linspace(0, src_dur, src_sr, endpoint=False))
+            export_wav(sig, path, sample_rate=src_sr)
+
+            loaded, sr = load_audio(path, target_sr=48000)
+            assert sr == 48000
+            # 44100 in -> 48000 out; allow +/-1 sample tolerance on polyphase
+            assert abs(len(loaded) - 48000) <= 1
+
+    def test_no_resample_when_target_matches(self):
+        """target_sr == native SR must be a no-op."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "test_native.wav"
+            src_sr = 48000
+            sig = np.sin(2 * np.pi * 440 * np.linspace(0, 1.0, src_sr, endpoint=False))
+            export_wav(sig, path, sample_rate=src_sr)
+
+            loaded, sr = load_audio(path, target_sr=48000)
+            assert sr == 48000
+            assert len(loaded) == src_sr
+
+    def test_default_no_resample(self):
+        """target_sr=None keeps legacy behavior (native SR returned)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "test_legacy.wav"
+            src_sr = 22050
+            sig = np.sin(2 * np.pi * 440 * np.linspace(0, 1.0, src_sr, endpoint=False))
+            export_wav(sig, path, sample_rate=src_sr)
+
+            loaded, sr = load_audio(path)
+            assert sr == 22050
+            assert len(loaded) == src_sr
+
+    def test_resample_stereo(self):
+        """Stereo files must resample each channel independently."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "test_stereo.wav"
+            src_sr = 44100
+            t = np.linspace(0, 1.0, src_sr, endpoint=False)
+            left = np.sin(2 * np.pi * 440 * t)
+            right = np.sin(2 * np.pi * 660 * t)
+            stereo = np.column_stack([left, right])
+            export_wav(stereo, path, sample_rate=src_sr)
+
+            loaded, sr = load_audio(path, target_sr=48000)
+            assert sr == 48000
+            assert loaded.ndim == 2
+            assert abs(loaded.shape[0] - 48000) <= 1
+            assert loaded.shape[1] == 2

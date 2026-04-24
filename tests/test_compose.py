@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from audiomancer.compose import fade_envelope, make_loopable, stitch, tremolo
+from audiomancer.compose import density_profile, fade_envelope, make_loopable, stitch, tremolo
 
 SR = 44100
 DUR = 10.0
@@ -152,3 +152,45 @@ class TestMakeLoopable:
         xf = int(SR * 1.0)
         # Middle section should be identical
         np.testing.assert_array_equal(result[xf:-xf], stem[xf:-xf])
+
+
+class TestDensityProfile:
+    """Phase D3: long-term 5 min arc envelopes."""
+
+    def test_flat_shape_and_value(self):
+        env = density_profile(DUR, profile="flat", sample_rate=SR)
+        assert env.shape == (N,)
+        assert np.all(env == 1.0)
+
+    def test_breathing_peaks_at_center(self):
+        env = density_profile(DUR, profile="breathing", sample_rate=SR)
+        # Peaks near center, lower at edges
+        assert env[N // 2] > env[0]
+        assert env[N // 2] > env[-1]
+        assert env[0] == pytest.approx(0.3, abs=0.05)
+        assert env[-1] == pytest.approx(0.3, abs=0.05)
+
+    def test_arc_peaks_at_center(self):
+        env = density_profile(DUR, profile="arc", sample_rate=SR)
+        assert env[N // 2] > env[0]
+        assert env[N // 2] > env[-1]
+        # Arc starts and ends at ~0.4
+        assert env[0] == pytest.approx(0.4, abs=0.05)
+
+    def test_random_walk_non_periodic(self):
+        env = density_profile(DUR, profile="random_walk",
+                              seed=42, sample_rate=SR)
+        assert env.shape == (N,)
+        # Values centered around 1
+        assert 0.8 < np.mean(env) < 1.2
+
+    def test_sparse_has_low_sections(self):
+        env = density_profile(60.0, profile="sparse",
+                              seed=42, sample_rate=SR)
+        # Sparse = some sections should be markedly lower
+        assert np.min(env) < 0.5
+        assert np.max(env) > 0.9
+
+    def test_unknown_profile_raises(self):
+        with pytest.raises(ValueError, match="Unknown density profile"):
+            density_profile(DUR, profile="crazytown", sample_rate=SR)

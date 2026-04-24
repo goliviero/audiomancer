@@ -4,7 +4,13 @@ from unittest.mock import patch
 
 import numpy as np
 
-from audiomancer.stochastic import DEFAULT_EVENTS, _place_events, scatter_events
+from audiomancer.stochastic import (
+    DEFAULT_EVENTS,
+    _place_events,
+    micro_events,
+    micro_silence_env,
+    scatter_events,
+)
 
 SR = 44100
 
@@ -77,3 +83,83 @@ class TestDefaultEvents:
         for evt in DEFAULT_EVENTS:
             assert "texture" in evt
             assert "duration" in evt
+
+
+class TestMicroEvents:
+    """Phase D4: typed micro-event scatter."""
+
+    def test_harmonic_bloom_shape_and_count(self):
+        dur = 300.0  # 5 min
+        chord = [264.0, 297.0, 396.0]
+        result = micro_events(
+            dur,
+            event_specs=[{"type": "harmonic_bloom", "rate_per_min": 1.0,
+                          "volume_db": -24.0, "duration_range": (3.0, 5.0)}],
+            chord_freqs=chord, seed=42, sample_rate=SR,
+        )
+        assert result.shape == (int(dur * SR), 2)
+        # ~5 events (1/min over 5 min). Signal should not be silent.
+        assert np.max(np.abs(result)) > 0.0
+
+    def test_deterministic_with_seed(self):
+        chord = [264.0]
+        a = micro_events(
+            60.0,
+            event_specs=[{"type": "harmonic_bloom", "rate_per_min": 2.0,
+                          "volume_db": -24.0}],
+            chord_freqs=chord, seed=42, sample_rate=SR,
+        )
+        b = micro_events(
+            60.0,
+            event_specs=[{"type": "harmonic_bloom", "rate_per_min": 2.0,
+                          "volume_db": -24.0}],
+            chord_freqs=chord, seed=42, sample_rate=SR,
+        )
+        assert np.allclose(a, b)
+
+    def test_grain_burst_needs_source(self):
+        import pytest
+        src = np.random.default_rng(0).standard_normal(SR * 2)
+        # With source: OK
+        result = micro_events(
+            30.0,
+            event_specs=[{"type": "grain_burst", "rate_per_min": 2.0,
+                          "volume_db": -28.0}],
+            source=src, seed=42, sample_rate=SR,
+        )
+        assert result.shape == (int(30 * SR), 2)
+        # Without source: raises
+        with pytest.raises(ValueError, match="grain_burst needs source"):
+            micro_events(
+                30.0,
+                event_specs=[{"type": "grain_burst", "rate_per_min": 2.0}],
+                seed=42, sample_rate=SR,
+            )
+
+    def test_overtone_whisper(self):
+        result = micro_events(
+            120.0,  # need >=60s for rate_per_min=1 to yield >=1 event
+            event_specs=[{"type": "overtone_whisper", "rate_per_min": 2.0,
+                          "volume_db": -32.0}],
+            chord_freqs=[264.0], seed=42, sample_rate=SR,
+        )
+        assert result.shape == (int(120 * SR), 2)
+        # Whisper is quiet but non-zero
+        assert np.max(np.abs(result)) > 0.0
+        assert np.max(np.abs(result)) < 0.1  # -32 dB = ~0.025
+
+
+class TestMicroSilenceEnv:
+    """Phase D4 bis: subtractive envelope for mix ducks."""
+
+    def test_returns_envelope_in_bounds(self):
+        env = micro_silence_env(60.0, rate_per_min=2.0,
+                                duck_db=-12.0, seed=42, sample_rate=SR)
+        assert env.shape == (int(60 * SR), 2)
+        assert np.min(env) < 1.0  # some ducking occurred
+        assert np.min(env) >= 0.2  # -12 dB ~= 0.25
+        assert np.max(env) == 1.0  # unchanged outside ducks
+
+    def test_zero_rate_no_duck(self):
+        env = micro_silence_env(30.0, rate_per_min=0.0, sample_rate=SR)
+        assert np.all(env == 1.0)

@@ -78,10 +78,12 @@ def drift(duration_sec: float, speed: float = 0.1,
     # Cumulative sum = Brownian motion
     brown = np.cumsum(raw)
 
-    # Smooth with a large moving average (1-second window)
+    # Smooth with a 1-second uniform filter. uniform_filter1d is O(N) regardless
+    # of window size — np.convolve was O(N*M) and became catastrophically slow
+    # at high SR (48kHz * long duration).
+    from scipy.ndimage import uniform_filter1d
     window = max(sample_rate, 1)
-    kernel = np.ones(window) / window
-    smoothed = np.convolve(brown, kernel, mode="same")
+    smoothed = uniform_filter1d(brown, size=window, mode="nearest")
 
     # Normalize to [-1, 1] range then scale
     peak = np.max(np.abs(smoothed))
@@ -222,3 +224,85 @@ def apply_filter_sweep(signal: np.ndarray, mod: np.ndarray,
             result[start:end] = out
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Phase D — multi-timescale LFO + Ornstein-Uhlenbeck random walk
+# ---------------------------------------------------------------------------
+
+def multi_lfo(duration_sec: float,
+              layers: list[tuple[float, float]] | None = None,
+              seed: int | None = None,
+              sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Superpose N sine LFOs at different scales with random phases.
+
+    Purpose: avoid the single-breathing "tell" on long loops. A 45s LFO gets
+    recognized by the 7th iteration; stacking 3 non-synced LFOs at different
+    scales makes the envelope un-predictable while staying organic.
+
+    Args:
+        duration_sec: Duration.
+        layers: List of (rate_hz, depth) tuples. Default = 3 layers:
+            fast micro-tremolo ~10s, medium breathing ~45s, slow drift ~3min.
+        seed: Random seed for per-layer phase offsets.
+        sample_rate: Sample rate.
+
+    Returns:
+        Envelope centered on 1.0, shape (n_samples,).
+    """
+    if layers is None:
+        layers = [(1 / 10.0, 0.03), (1 / 45.0, 0.10), (1 / 180.0, 0.05)]
+
+    n = int(sample_rate * duration_sec)
+    t = np.linspace(0, duration_sec, n, endpoint=False)
+    rng = np.random.default_rng(seed)
+
+    env = np.ones(n)
+    for rate_hz, depth in layers:
+        phase = rng.uniform(0, 2 * np.pi)
+        env = env + depth * np.sin(2 * np.pi * rate_hz * t + phase)
+
+    # Keep envelope bounded around 1 even if all layers align
+    max_depth = sum(d for _, d in layers)
+    return np.clip(env, 1 - max_depth, 1 + max_depth)
+
+
+def random_walk(duration_sec: float, sigma: float = 0.05, tau: float = 10.0,
+                seed: int | None = None,
+                sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Ornstein-Uhlenbeck mean-reverting random walk (bounded, non-periodic).
+
+    Unlike drift() which is pure Brownian (unbounded), this process is pulled
+    back toward 1.0 with time constant `tau`. Suitable for "organic drift" on
+    parameters (volume, filter cutoff) where you want unpredictability without
+    runaway accumulation on 3h renders.
+
+    dx = -(x - 1) * dt/tau + sigma * sqrt(dt) * N(0,1)
+
+    Args:
+        duration_sec: Duration.
+        sigma: Noise amplitude (stationary std is ~ sigma * sqrt(tau/2)).
+        tau: Mean-reversion time constant in seconds.
+        seed: Random seed.
+        sample_rate: Sample rate.
+
+    Returns:
+        Walk centered on 1.0, shape (n_samples,). Stays bounded in practice
+        within 1 +- 3 * sigma * sqrt(tau/2) at 99.7% of time.
+    """
+    from scipy.signal import lfilter
+
+    n = int(sample_rate * duration_sec)
+    dt = 1.0 / sample_rate
+    rng = np.random.default_rng(seed)
+
+    # Exact OU discretization: x[i] = alpha * x[i-1] + (1-alpha) * mean + noise
+    alpha = np.exp(-dt / tau)
+    noise_std = sigma * np.sqrt((1 - alpha**2) * tau / 2)
+
+    noise = rng.standard_normal(n) * noise_std
+    # Add mean drift (1.0) into the noise term: since target mean is 1,
+    # we shift after the AR(1) filter. AR(1): y[n] = alpha * y[n-1] + noise[n]
+    # solves the deviation from the mean; final signal = 1 + deviation.
+    deviation = lfilter([1.0], [1.0, -alpha], noise)
+    return 1.0 + deviation

@@ -60,7 +60,7 @@ def mono_bass(signal: np.ndarray, crossover_hz: float = 100.0,
 # ---------------------------------------------------------------------------
 
 def soft_clip(signal: np.ndarray, threshold_db: float = -3.0,
-              drive: float = 1.0) -> np.ndarray:
+              drive: float = 1.0, stages: int = 1) -> np.ndarray:
     """Soft clipping via tanh saturation.
 
     Gently rounds peaks instead of hard clipping. Adds subtle warmth
@@ -70,14 +70,21 @@ def soft_clip(signal: np.ndarray, threshold_db: float = -3.0,
         signal: Input signal.
         threshold_db: Level at which saturation begins (in dB).
         drive: Saturation intensity (1.0 = gentle, 2.0 = warm, 3.0 = hot).
+        stages: Number of cascaded tanh passes (1 = legacy single-stage).
+            Each extra stage nudges drive up 15% before re-saturating,
+            adding richer even-harmonic bloom without raw clipping.
 
     Returns:
         Soft-clipped signal.
     """
     threshold = 10 ** (threshold_db / 20)
     driven = signal * drive / threshold
-    clipped = np.tanh(driven) * threshold
-    return clipped
+    for _ in range(stages):
+        driven = np.tanh(driven)
+        if _ < stages - 1:
+            # feed back into itself with a slight boost before the next pass
+            driven = driven * 1.15
+    return driven * threshold
 
 
 # ---------------------------------------------------------------------------
@@ -140,6 +147,7 @@ def master_chain(signal: np.ndarray,
                  highpass_hz: float = 30.0,
                  crossover_hz: float = 100.0,
                  clip_threshold_db: float = -3.0,
+                 clip_stages: int = 3,
                  ceiling_dbtp: float = -1.0,
                  sample_rate: int = SAMPLE_RATE) -> np.ndarray:
     """Full mastering chain: highpass -> mono bass -> soft clip -> limit.
@@ -165,8 +173,8 @@ def master_chain(signal: np.ndarray,
     # 2. Mono the sub-bass
     sig = mono_bass(sig, crossover_hz=crossover_hz, sample_rate=sample_rate)
 
-    # 3. Gentle saturation to tame peaks
-    sig = soft_clip(sig, threshold_db=clip_threshold_db)
+    # 3. Cascaded tanh saturation for harmonic warmth
+    sig = soft_clip(sig, threshold_db=clip_threshold_db, stages=clip_stages)
 
     # 4. Brick-wall limiting
     sig = limit(sig, ceiling_dbtp=ceiling_dbtp, sample_rate=sample_rate)

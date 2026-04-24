@@ -151,9 +151,21 @@ def drone(frequency: float, duration_sec: float,
     return _normalize_peak(signal, amplitude)
 
 
+def _voice_offsets(voices: int, detune_cents: float,
+                   jitter_cents: float, seed: int | None) -> np.ndarray:
+    """Compute voice detune offsets. Linspace base + optional seeded jitter."""
+    base = np.linspace(-detune_cents / 2, detune_cents / 2, voices)
+    if jitter_cents > 0 and seed is not None:
+        rng = np.random.default_rng(seed)
+        base = base + rng.uniform(-jitter_cents, jitter_cents, voices)
+    return base
+
+
 def pad(frequency: float, duration_sec: float,
         voices: int = 5, detune_cents: float = 12.0,
         amplitude: float = DEFAULT_AMPLITUDE,
+        seed: int | None = None,
+        jitter_cents: float = 0.0,
         sample_rate: int = SAMPLE_RATE) -> np.ndarray:
     """Generate a detuned unison pad (supersaw-style).
 
@@ -161,16 +173,18 @@ def pad(frequency: float, duration_sec: float,
         frequency: Fundamental frequency in Hz.
         duration_sec: Duration in seconds.
         voices: Number of detuned voices.
-        detune_cents: Total detune spread in cents.
+        detune_cents: Total detune spread in cents (linspace base).
         amplitude: Peak amplitude.
+        seed: Random seed. Required with jitter_cents > 0 for reproducibility.
+        jitter_cents: Random +-cents added to each voice offset (breaks rigid
+            linspace beating). 0.0 = deterministic comportement (legacy).
         sample_rate: Sample rate in Hz.
 
     Returns:
         Mono signal.
     """
-    offsets = np.linspace(-detune_cents / 2, detune_cents / 2, voices)
-    t = _time_axis(duration_sec, sample_rate)
-    signal = np.zeros_like(t)
+    offsets = _voice_offsets(voices, detune_cents, jitter_cents, seed)
+    signal = np.zeros(int(duration_sec * sample_rate))
 
     for offset in offsets:
         freq = frequency * 2 ** (offset / 1200)
@@ -182,6 +196,8 @@ def pad(frequency: float, duration_sec: float,
 def chord_pad(frequencies: list[float], duration_sec: float,
               voices: int = 3, detune_cents: float = 8.0,
               amplitude: float = DEFAULT_AMPLITUDE,
+              seed: int | None = None,
+              jitter_cents: float = 0.0,
               sample_rate: int = SAMPLE_RATE) -> np.ndarray:
     """Generate a held chord with detuned voices per note.
 
@@ -189,8 +205,11 @@ def chord_pad(frequencies: list[float], duration_sec: float,
         frequencies: List of frequencies forming the chord (e.g., [261.63, 329.63, 392.0]).
         duration_sec: Duration in seconds.
         voices: Detuned voices per note.
-        detune_cents: Detune spread in cents.
+        detune_cents: Detune spread in cents (linspace base).
         amplitude: Peak amplitude.
+        seed: Random seed. Required with jitter_cents > 0 for reproducibility.
+        jitter_cents: Random +-cents added to each voice offset per-note.
+            Breaks rigid beating between chord notes. 0.0 = legacy.
         sample_rate: Sample rate in Hz.
 
     Returns:
@@ -198,9 +217,12 @@ def chord_pad(frequencies: list[float], duration_sec: float,
     """
     t = _time_axis(duration_sec, sample_rate)
     signal = np.zeros_like(t)
-    offsets = np.linspace(-detune_cents / 2, detune_cents / 2, voices)
 
-    for freq in frequencies:
+    # Per-note seed derivation: each note gets its own jitter pattern
+    # so the chord isn't just "one pad copied at different pitches"
+    for i, freq in enumerate(frequencies):
+        note_seed = None if seed is None else seed + i * 101
+        offsets = _voice_offsets(voices, detune_cents, jitter_cents, note_seed)
         for offset in offsets:
             detuned = freq * 2 ** (offset / 1200)
             signal += np.sin(2 * np.pi * detuned * t)

@@ -274,3 +274,81 @@ def verify_loop(stem: np.ndarray, crossfade_sec: float = 5.0,
     }
 
     return score, report
+
+
+# ---------------------------------------------------------------------------
+# Phase D — long-term density profile (5 min story arc)
+# ---------------------------------------------------------------------------
+
+def density_profile(duration_sec: float, profile: str = "flat",
+                    seed: int | None = None,
+                    sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Long-term amplitude envelope — defines how "busy" a stem feels over time.
+
+    Applied once at the stem level (before LUFS normalization) to give a
+    5-min render a sense of direction without needing per-layer orchestration.
+
+    Profiles:
+        - "flat": constant 1.0 (legacy, no envelope)
+        - "breathing": one raised-cosine half-cycle (0.3 -> 1.0 -> 0.3)
+        - "arc": smooth rise to center, fade out (0.4 -> 1.0 -> 0.4, symmetric)
+        - "random_walk": Ornstein-Uhlenbeck drift, non-periodic
+        - "sparse": binary-ish random gating (sections on/off), smooth edges
+
+    Args:
+        duration_sec: Total duration.
+        profile: One of the names above.
+        seed: Random seed (only used by stochastic profiles).
+        sample_rate: Sample rate.
+
+    Returns:
+        Envelope in [0, 1+], shape (n_samples,). Multiply your stem by it.
+    """
+    n = int(sample_rate * duration_sec)
+
+    if profile == "flat":
+        return np.ones(n)
+
+    if profile == "breathing":
+        # Raised cosine: 0.3 at edges, 1.0 at center
+        t = np.linspace(0, 1, n, endpoint=False)
+        env = 0.3 + 0.7 * 0.5 * (1 - np.cos(2 * np.pi * t))
+        return env
+
+    if profile == "arc":
+        # Asymmetric smooth arc: 0.4 -> 1.0 -> 0.4 via half-sine envelope
+        t = np.linspace(0, 1, n, endpoint=False)
+        env = 0.4 + 0.6 * np.sin(np.pi * t)
+        return env
+
+    if profile == "random_walk":
+        # Import here to avoid circular imports
+        from audiomancer.modulation import random_walk as _rw
+        return _rw(duration_sec, sigma=0.08, tau=duration_sec / 5,
+                   seed=seed, sample_rate=sample_rate)
+
+    if profile == "sparse":
+        # Alternating sections 20-60s with smooth transitions
+        rng = np.random.default_rng(seed)
+        env = np.zeros(n)
+        pos = 0
+        state = 1.0
+        while pos < n:
+            section_sec = rng.uniform(20.0, 60.0)
+            section_len = int(section_sec * sample_rate)
+            end = min(pos + section_len, n)
+            env[pos:end] = state
+            pos = end
+            state = 0.3 if state > 0.5 else 1.0
+        # Smooth transitions with 2s crossfade
+        from scipy.signal import sosfiltfilt, butter
+        sos = butter(2, 0.5 / (sample_rate / 2), btype="low", output="sos")
+        env = sosfiltfilt(sos, env)
+        return np.clip(env, 0.0, 1.0)
+
+    raise ValueError(
+        f"Unknown density profile: {profile!r}. "
+        "Valid: flat, breathing, arc, random_walk, sparse."
+    )
+
+    return score, report
