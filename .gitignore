@@ -16,3 +16,9 @@ dist/
 # Samples bank — audio files stay local (README.md is tracked, see above *.wav rule)
 samples/cc0/
 samples/own/
+
+# Piano workflow artifacts (never commit)
+assets/soundfonts/*.sf2
+recordings/
+raw/
+stems/

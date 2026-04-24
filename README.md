@@ -17,6 +17,11 @@ git clone git@github.com:goliviero/audiomancer.git
 cd audiomancer
 pip install -e .
 
+# Config-driven (V006+ pattern)
+python scripts/render_mix.py --config V005 --preview
+# => output/V005/V005_mix_preview.wav
+
+# One-shot script (V003 legacy)
 python scripts/06_akasha_v003.py
 # => output/akasha_v003_master.wav (stereo, 44100 Hz, -14 LUFS)
 ```
@@ -74,15 +79,18 @@ export_wav(master, "output/layered_mix.wav")
 
 | Module | What it does |
 |--------|-------------|
-| `synth` | Sine, square, saw, triangle, white/pink/brown noise, drones, chord pads |
+| `synth` | Sine, square, saw, triangle, white/pink/brown noise, drones, chord pads (w/ seeded jitter), granular |
 | `binaural` | Stereo binaural beats with presets (theta, alpha, delta, solfeggio) |
 | `effects` | Scipy filters (LP/HP) + pedalboard effects (reverb, delay, chorus, compression) |
 | `layers` | Mix signals, layer stems, crossfade, loop, LUFS normalization |
 | `field` | Field recording processing: cleanup, noise gate, reverb, fades |
-| `utils` | WAV I/O, normalize, fade in/out, mono/stereo conversion, trim |
-| `modulation` | LFO (sine/triangle), Brownian drift, evolving LFO, filter sweep |
+| `utils` | WAV I/O (auto-resample), normalize, fade in/out, mono/stereo conversion, `load_sample()` |
+| `modulation` | LFOs, drift, evolving_lfo, `multi_lfo` (stack), `random_walk` (OU bounded), filter sweep |
 | `textures` | 9 evolving ambient presets with registry + generate() dispatcher |
-| `compose` | Temporal composition: fade envelopes, tremolo, stitch, make_loopable |
+| `compose` | Fade envelopes, tremolo, stitch, make_loopable, `density_profile` (5-min arc) |
+| `stochastic` | `scatter_events` (textures) + `micro_events` (typed: bloom/grain/whisper) + `micro_silence_env` |
+| `mastering` | `master_chain` (highpass/mono-bass/soft_clip cascade/limiter), LUFS-safe |
+| `builders` | Parametric stem generators for config-driven render_stem/render_mix (pad_alive, arpege_bass, binaural_beat, pendulum_bass) |
 | `quick` | One-liner API: q.drone, q.pad, q.binaural, q.texture, q.mix, q.save |
 | `spectral` | FFT processing: freeze, blur, pitch shift, spectral gate, morph |
 | `spatial` | Pan, auto-pan, stereo width, mid/side, Haas effect, rotate |
@@ -99,19 +107,50 @@ numpy, scipy, soundfile, pedalboard
 
 Install: `pip install -e .` or `pip install numpy scipy soundfile pedalboard`
 
+**Optional (piano workflow):**
+- `mido + python-rtmidi` (Python) — MIDI capture from USB keyboard
+- `FluidSynth` (system binary) — offline MIDI -> WAV rendering with SoundFont
+  - macOS: `brew install fluidsynth`
+  - Windows: `winget install FluidSynth.FluidSynth`
+  - Linux: `apt install fluidsynth`
+
+---
+
+## Piano Workflow
+
+Capture from a USB-MIDI keyboard (e.g. Yamaha P45), render with SoundFont offline,
+process into loopable ambient stems. Pure CLI, no DAW, no realtime VST.
+
+```bash
+# 1. Record MIDI from keyboard (Ctrl+C to stop)
+python scripts/piano/record_piano.py --output recordings/pad.mid
+
+# 2. Render MIDI -> WAV via FluidSynth + SoundFont
+python scripts/piano/render_midi.py \
+  --midi recordings/pad.mid \
+  --soundfont assets/soundfonts/piano.sf2 \
+  --output raw/pad.wav
+
+# 3. Apply Audiomancer chain (bass_drone / mid_pad / sparse_notes presets)
+python scripts/piano/process_piano.py \
+  --input raw/pad.wav --preset mid_pad --output stems/pad_mid.wav
+```
+
+Full doc: [scripts/piano/README.md](scripts/piano/README.md).
+
 ---
 
 ## Tests
 
 ```bash
-python -m pytest tests/ -v   # 16 test files, 336 tests
+python -m pytest tests/ -v   # 367 tests passing
 ```
 
 ---
 
 ## Philosophy
 
-- **Scripts > Framework**: each script = one sound. No architecture.
-- **Disposable**: scripts are cheap to write, modify, or throw away.
-- **No AI audio**: no Suno, no AudioCraft. Original synthesis only.
-- **Real tools for real work**: use REAPER + Vital for serious DAW work.
+- **Scripts > Framework**: lib provides primitives, scripts orchestrate. No hidden magic.
+- **Disposable**: per-video scripts are archived post-release (V004, V005). V006+ uses `configs/` + generic renderers.
+- **No AI audio**: no Suno, no AudioCraft. Original synthesis + (optional) MIDI from real keyboards.
+- **Loop-safe**: every stem is designed for seamless 3h ffmpeg loops — multi-scale LFOs + random_walk modulation break the "tell" of repetition.
