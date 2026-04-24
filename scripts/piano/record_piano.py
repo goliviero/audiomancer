@@ -18,6 +18,13 @@ import sys
 import time
 from pathlib import Path
 
+NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+
+def _note_name(midi_note: int) -> str:
+    octave = midi_note // 12 - 1
+    return f"{NOTE_NAMES[midi_note % 12]}{octave}"
+
 
 def _require_mido():
     try:
@@ -126,8 +133,12 @@ def main():
                 if msg.type == "note_on" and msg.velocity > 0:
                     note_count += 1
                     elapsed = now - start_time
-                    print(f"\r  [rec] notes: {note_count}  |  {elapsed:5.1f}s  ",
-                          end="", flush=True)
+                    name = _note_name(msg.note)
+                    print(
+                        f"\r  [rec] notes: {note_count:3d}  |  {elapsed:5.1f}s  "
+                        f"|  last: {name:>3s} v{msg.velocity:3d}     ",
+                        end="", flush=True,
+                    )
 
             time.sleep(0.005)  # 5ms poll, cheap and responsive
     finally:

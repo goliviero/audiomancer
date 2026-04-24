@@ -7,6 +7,7 @@ from audiomancer.synth import (
     brown_noise,
     chord_pad,
     drone,
+    karplus_strong,
     noise,
     pad,
     pink_noise,
@@ -151,3 +152,46 @@ class TestVoiceJitter:
         b = chord_pad([220.0, 330.0, 440.0], 1.0, voices=3,
                       seed=99, jitter_cents=2.0, sample_rate=SR)
         assert not np.allclose(a, b)
+
+
+class TestKarplusStrong:
+    """Physical plucked string synthesis."""
+
+    def test_shape(self):
+        # Short duration keeps the test fast (Python loop per sample)
+        sig = karplus_strong(220.0, 0.5, sample_rate=SR)
+        assert sig.shape == (int(SR * 0.5),)
+
+    def test_deterministic_with_seed(self):
+        a = karplus_strong(220.0, 0.5, seed=42, sample_rate=SR)
+        b = karplus_strong(220.0, 0.5, seed=42, sample_rate=SR)
+        assert np.allclose(a, b)
+
+    def test_different_seed_differs(self):
+        a = karplus_strong(220.0, 0.5, seed=42, sample_rate=SR)
+        b = karplus_strong(220.0, 0.5, seed=99, sample_rate=SR)
+        assert not np.allclose(a, b)
+
+    def test_lower_decay_means_shorter_tail(self):
+        """Smaller decay -> tail dies faster -> lower tail RMS."""
+        fast_decay = karplus_strong(220.0, 0.5, decay=0.99, seed=42, sample_rate=SR)
+        slow_decay = karplus_strong(220.0, 0.5, decay=0.999, seed=42, sample_rate=SR)
+        tail_n = int(SR * 0.1)  # last 100 ms
+        fast_tail = np.sqrt(np.mean(fast_decay[-tail_n:] ** 2))
+        slow_tail = np.sqrt(np.mean(slow_decay[-tail_n:] ** 2))
+        assert fast_tail < slow_tail
+
+    def test_pitch_follows_frequency(self):
+        """Buffer size derives from frequency -> autocorrelation peak at 1/f."""
+        sig = karplus_strong(220.0, 0.3, seed=42, sample_rate=SR)
+        # Expected period in samples
+        period = int(SR / 220.0)
+        # Autocorrelation should peak near expected period
+        corr = np.correlate(sig[:2048], sig[:2048], mode="full")
+        mid = len(corr) // 2
+        # Search in +-10% window around expected period for the max
+        window = int(period * 0.1) + 1
+        lo, hi = mid + period - window, mid + period + window
+        peak_idx = lo + np.argmax(corr[lo:hi])
+        detected_period = peak_idx - mid
+        assert abs(detected_period - period) <= window

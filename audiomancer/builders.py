@@ -289,6 +289,53 @@ def binaural_beat(duration: float, seed: int, sample_rate: int,
 
 
 # ---------------------------------------------------------------------------
+# Texture wrapper — any textures/ preset as a builder
+# ---------------------------------------------------------------------------
+
+def texture(duration: float, seed: int, sample_rate: int,
+            texture_name: str, **texture_params) -> np.ndarray:
+    """Wrap any preset from audiomancer.textures as a builder.
+
+    Covers the 9 built-in textures (ethereal_wash, crystal_shimmer,
+    breathing_pad, evolving_drone, singing_bowl, ocean_bed, earth_hum,
+    deep_space, noise_wash) with a single config entry.
+
+    Args:
+        texture_name: Name of the texture (see textures.list_textures()).
+        **texture_params: Passed through to the preset (e.g. frequency,
+            base_freq, frequencies depending on the preset).
+    """
+    from audiomancer.textures import generate as _gen
+    return _gen(texture_name, duration_sec=duration, seed=seed,
+                sample_rate=sample_rate, **texture_params)
+
+
+# ---------------------------------------------------------------------------
+# Piano processed — load a recorded piano WAV + apply a piano_presets preset
+# ---------------------------------------------------------------------------
+
+def piano_processed(duration: float, seed: int, sample_rate: int,
+                    source_path: str,
+                    preset: str = "mid_pad") -> np.ndarray:
+    """Load a piano WAV and apply one of the piano_presets presets.
+
+    Args:
+        source_path: Path to the raw piano .wav (relative to project root).
+        preset: 'bass_drone' | 'mid_pad' | 'sparse_notes'.
+
+    Returns stereo ndarray ready for LUFS + master chain.
+    """
+    from pathlib import Path
+    from audiomancer.piano_presets import PRESETS
+    from audiomancer.utils import load_audio
+
+    path = Path(source_path)
+    sig, _ = load_audio(path, target_sr=sample_rate)
+    preset_fn, _default_lufs = PRESETS[preset]
+    return preset_fn(sig, duration, sample_rate)
+
+
+# ---------------------------------------------------------------------------
 # Registry — string key -> builder function
 # ---------------------------------------------------------------------------
 
@@ -297,4 +344,6 @@ REGISTRY = {
     "pendulum_bass": pendulum_bass,
     "arpege_bass": arpege_bass,
     "binaural_beat": binaural_beat,
+    "texture": texture,
+    "piano_processed": piano_processed,
 }

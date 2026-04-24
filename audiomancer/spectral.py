@@ -387,3 +387,77 @@ def morph(signal_a: np.ndarray, signal_b: np.ndarray,
     right = _morph_mono(signal_a[:, 1], signal_b[:, 1])
     min_len = min(len(left), len(right))
     return np.column_stack([left[:min_len], right[:min_len]])
+
+
+# ---------------------------------------------------------------------------
+# Paulstretch — extreme time-stretch via phase randomization (Paul Nasca)
+# ---------------------------------------------------------------------------
+
+def paulstretch(signal: np.ndarray, stretch_factor: float,
+                window_sec: float = 0.5, seed: int = 42,
+                sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Extreme time-stretch via phase randomization.
+
+    Ideal for ambient pad transformation: feed 10s of piano, get 100s+ of
+    drifting texture while preserving spectral content. Public domain
+    algorithm by Paul Nasca (Paulstretch).
+
+    Args:
+        signal: Mono or stereo input.
+        stretch_factor: 1.0 = no change, 10.0 = 10x slower, 100.0 = extreme.
+        window_sec: FFT window in seconds. Larger = smoother/padder,
+            smaller = more granular. Default 0.5s is a good ambient sweet spot.
+        seed: Seed for the random phase generator (reproducible).
+        sample_rate: Sample rate.
+
+    Returns:
+        Stretched signal, same ndim as input. Peak-normalized to 0.95.
+    """
+    if signal.ndim == 2:
+        left = paulstretch(signal[:, 0], stretch_factor,
+                           window_sec, seed, sample_rate)
+        right = paulstretch(signal[:, 1], stretch_factor,
+                            window_sec, seed + 1, sample_rate)
+        n = min(len(left), len(right))
+        return np.column_stack([left[:n], right[:n]])
+
+    n_win = 2 ** int(np.ceil(np.log2(window_sec * sample_rate)))
+    hop_out = n_win // 2
+    read_hop = max(1, int(hop_out / stretch_factor))
+
+    # Ensure source is at least one window long (zero-pad if not)
+    if len(signal) < n_win:
+        signal = np.concatenate([signal, np.zeros(n_win - len(signal) + 1)])
+
+    # Derive frame count from desired output length so the stretch ratio
+    # is honored even when the source is short (we wrap reads modulo n_in).
+    target_out = int(len(signal) * stretch_factor)
+    n_frames = max(1, (target_out - n_win) // hop_out + 1)
+
+    output_len = n_frames * hop_out + n_win
+    output = np.zeros(output_len)
+
+    window = np.hanning(n_win)
+    rng = np.random.default_rng(seed)
+    src_len = len(signal)
+
+    for i in range(n_frames):
+        # Wrap source reads so long outputs from short sources stay musical
+        read_pos = (i * read_hop) % max(1, src_len - n_win)
+        write_pos = i * hop_out
+        frame = signal[read_pos:read_pos + n_win] * window
+        # FFT
+        spectrum = np.fft.rfft(frame)
+        # Randomize phase — the key operation
+        magnitudes = np.abs(spectrum)
+        phases = rng.uniform(0, 2 * np.pi, size=len(magnitudes))
+        new_spectrum = magnitudes * np.exp(1j * phases)
+        # ISTFT
+        new_frame = np.fft.irfft(new_spectrum, n=n_win) * window
+        output[write_pos:write_pos + n_win] += new_frame
+
+    # Peak normalize
+    peak = np.max(np.abs(output))
+    if peak > 0:
+        output = output / peak * 0.95
+    return output

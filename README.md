@@ -79,7 +79,7 @@ export_wav(master, "output/layered_mix.wav")
 
 | Module | What it does |
 |--------|-------------|
-| `synth` | Sine, square, saw, triangle, white/pink/brown noise, drones, chord pads (w/ seeded jitter), granular |
+| `synth` | Sine, square, saw, triangle, noises, drones, chord pads (w/ seeded jitter), granular, **karplus_strong** (plucked string) |
 | `binaural` | Stereo binaural beats with presets (theta, alpha, delta, solfeggio) |
 | `effects` | Scipy filters (LP/HP) + pedalboard effects (reverb, delay, chorus, compression) |
 | `layers` | Mix signals, layer stems, crossfade, loop, LUFS normalization |
@@ -90,9 +90,11 @@ export_wav(master, "output/layered_mix.wav")
 | `compose` | Fade envelopes, tremolo, stitch, make_loopable, `density_profile` (5-min arc) |
 | `stochastic` | `scatter_events` (textures) + `micro_events` (typed: bloom/grain/whisper) + `micro_silence_env` |
 | `mastering` | `master_chain` (highpass/mono-bass/soft_clip cascade/limiter), LUFS-safe |
-| `builders` | Parametric stem generators for config-driven render_stem/render_mix (pad_alive, arpege_bass, binaural_beat, pendulum_bass) |
+| `saturation` | `tape_saturate` (asymmetric), `tape_hiss` (subliminal pink noise), `vinyl_wow` (pitch flutter) |
+| `builders` | Parametric stem generators for config-driven render_stem/render_mix (pad_alive, arpege_bass, binaural_beat, pendulum_bass, texture, piano_processed) |
+| `piano_presets` | 3 presets (bass_drone, mid_pad, sparse_notes) for raw piano WAVs — shared by CLI + builder |
 | `quick` | One-liner API: q.drone, q.pad, q.binaural, q.texture, q.mix, q.save |
-| `spectral` | FFT processing: freeze, blur, pitch shift, spectral gate, morph |
+| `spectral` | FFT processing: freeze, blur, pitch shift, spectral gate, morph, **paulstretch** (extreme time-stretch) |
 | `spatial` | Pan, auto-pan, stereo width, mid/side, Haas effect, rotate |
 | `harmony` | Scales, just intonation, Pythagorean tuning, chord generators, sacred ratios |
 | `envelope` | ADSR (linear/exponential), AR, multi-segment, breathing, swell, gate patterns |

@@ -9,6 +9,7 @@ from audiomancer.spectral import (
     blur,
     freeze,
     morph,
+    paulstretch,
     pitch_shift,
     spectral_balance,
     spectral_gate,
@@ -215,3 +216,42 @@ class TestSpectralBalance:
         # Should detect overlap in the mid band (440 Hz is in 200-2000)
         has_overlap = any(w[0] == "mid" for w in result["overlap_warnings"])
         assert has_overlap
+
+
+class TestPaulstretch:
+    """Extreme time-stretch via phase randomization."""
+
+    def test_stretch_mono(self):
+        src = sine(440, 1.0, amplitude=0.5, sample_rate=SR)
+        out = paulstretch(src, stretch_factor=5.0, window_sec=0.3,
+                          seed=42, sample_rate=SR)
+        # Output should be roughly 5x longer (+- window edge slack)
+        ratio = len(out) / len(src)
+        assert 4.0 < ratio < 6.0
+
+    def test_stretch_stereo(self):
+        src_mono = sine(440, 1.0, amplitude=0.5, sample_rate=SR)
+        src = np.column_stack([src_mono, src_mono])
+        out = paulstretch(src, stretch_factor=3.0, window_sec=0.3,
+                          seed=42, sample_rate=SR)
+        assert out.ndim == 2
+        assert out.shape[1] == 2
+
+    def test_non_silent(self):
+        src = sine(440, 1.0, amplitude=0.5, sample_rate=SR)
+        out = paulstretch(src, stretch_factor=4.0, window_sec=0.3,
+                          seed=42, sample_rate=SR)
+        assert np.max(np.abs(out)) > 0.1
+
+    def test_deterministic(self):
+        src = sine(440, 1.0, amplitude=0.5, sample_rate=SR)
+        a = paulstretch(src, 3.0, window_sec=0.3, seed=42, sample_rate=SR)
+        b = paulstretch(src, 3.0, window_sec=0.3, seed=42, sample_rate=SR)
+        assert np.allclose(a, b)
+
+    def test_different_seeds_differ(self):
+        src = sine(440, 1.0, amplitude=0.5, sample_rate=SR)
+        a = paulstretch(src, 3.0, window_sec=0.3, seed=42, sample_rate=SR)
+        b = paulstretch(src, 3.0, window_sec=0.3, seed=99, sample_rate=SR)
+        # Phase randomization is the whole point -> different seeds must differ
+        assert not np.allclose(a, b)

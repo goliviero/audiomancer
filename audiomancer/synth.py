@@ -231,6 +231,51 @@ def chord_pad(frequencies: list[float], duration_sec: float,
 
 
 # ---------------------------------------------------------------------------
+# Karplus-Strong — physical plucked string synthesis
+# ---------------------------------------------------------------------------
+
+def karplus_strong(frequency: float, duration_sec: float,
+                   decay: float = 0.998, brightness: float = 0.5,
+                   amplitude: float = DEFAULT_AMPLITUDE,
+                   seed: int | None = None,
+                   sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Physical plucked string via Karplus-Strong algorithm.
+
+    A short delay line of size N = sample_rate / frequency is initialized
+    with white noise, then looped with a lowpass-filtered feedback.
+    Naturally produces a plucked-string timbre with exponential decay.
+
+    Args:
+        frequency: Fundamental frequency in Hz.
+        duration_sec: Total duration.
+        decay: Feedback decay factor (0.99-0.999). Lower = shorter pluck.
+        brightness: 0.0 = dark (full smoothing), 1.0 = bright (direct).
+            Controls the lowpass in the feedback loop.
+        amplitude: Peak amplitude of the output.
+        seed: Random seed for the initial noise burst.
+        sample_rate: Sample rate.
+
+    Returns:
+        Mono signal (n_samples,).
+    """
+    buf_size = max(2, int(sample_rate / max(frequency, 1e-3)))
+    rng = np.random.default_rng(seed)
+    buf = rng.uniform(-1.0, 1.0, size=buf_size)
+
+    n = int(duration_sec * sample_rate)
+    out = np.zeros(n)
+
+    for i in range(n):
+        idx = i % buf_size
+        prev = (idx - 1) % buf_size
+        out[i] = buf[idx]
+        avg = 0.5 * (buf[idx] + buf[prev])
+        buf[idx] = (brightness * buf[idx] + (1 - brightness) * avg) * decay
+
+    return _normalize_peak(out, amplitude)
+
+
+# ---------------------------------------------------------------------------
 # Granular synthesis
 # ---------------------------------------------------------------------------
 
