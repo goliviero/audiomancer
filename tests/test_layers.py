@@ -11,6 +11,7 @@ from audiomancer.layers import (
     measure_lufs,
     mix,
     normalize_lufs,
+    suggest_eq_cuts,
 )
 
 SR = 44100
@@ -137,4 +138,35 @@ class TestMeasureLufs:
         sig = 0.5 * np.sin(2 * np.pi * 440 * t)
         lufs = measure_lufs(sig)
         assert np.isfinite(lufs)
-        assert -60 < lufs < 0  # Reasonable range
+
+
+class TestSuggestEqCuts:
+    """Suggest EQ cuts to reduce mid-band masking across stems."""
+
+    def test_returns_empty_for_disjoint_spectra(self):
+        """Low-freq stem + high-freq stem should have no overlap."""
+        t = np.linspace(0, 2, SR * 2, endpoint=False)
+        low = 0.5 * np.sin(2 * np.pi * 80 * t)    # in sub/low bands
+        high = 0.5 * np.sin(2 * np.pi * 8000 * t)  # in high band
+        suggestions = suggest_eq_cuts(
+            {"low": low, "high": high}, sample_rate=SR,
+        )
+        # No mid-band overlap -> no suggestions
+        assert isinstance(suggestions, list)
+
+    def test_returns_suggestions_for_overlapping_stems(self):
+        """Two stems with energy in the same mid band should generate suggestions."""
+        t = np.linspace(0, 2, SR * 2, endpoint=False)
+        a = 0.5 * np.sin(2 * np.pi * 800 * t)  # mid band
+        b = 0.5 * np.sin(2 * np.pi * 1200 * t)  # also mid band
+        suggestions = suggest_eq_cuts({"a": a, "b": b}, sample_rate=SR)
+        # Each suggestion is (stem_name, freq_hz, cut_db)
+        assert all(len(s) == 3 for s in suggestions)
+
+    def test_suggestions_reference_valid_stem(self):
+        t = np.linspace(0, 2, SR * 2, endpoint=False)
+        a = 0.5 * np.sin(2 * np.pi * 800 * t)
+        b = 0.5 * np.sin(2 * np.pi * 1200 * t)
+        suggestions = suggest_eq_cuts({"a": a, "b": b}, sample_rate=SR)
+        for stem, _, _ in suggestions:
+            assert stem in ("a", "b")

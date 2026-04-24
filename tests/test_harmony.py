@@ -7,6 +7,7 @@ from audiomancer.harmony import (
     SACRED_RATIOS,
     SCALES,
     SOLFEGGIO,
+    arpeggio_from_chord,
     cents_between,
     drone_cluster,
     fibonacci_freqs,
@@ -251,4 +252,47 @@ class TestConstants:
 
     def test_sacred_ratios(self):
         assert SACRED_RATIOS["perfect_fifth"] == pytest.approx(1.5)
+
+
+class TestArpeggioFromChord:
+    def test_cmaj_up(self):
+        freqs = arpeggio_from_chord("Cmaj", pattern="up", octaves=1)
+        # 3 notes: root, major 3rd, 5th
+        assert len(freqs) == 3
+        assert freqs[0] < freqs[1] < freqs[2]
+
+    def test_cmaj9_2_octaves(self):
+        freqs = arpeggio_from_chord("Cmaj9", pattern="up", octaves=2)
+        # Cmaj9 = 5 notes, 2 octaves -> 10 notes
+        assert len(freqs) == 10
+
+    def test_up_down_is_palindrome(self):
+        up_down = arpeggio_from_chord("Cmaj", pattern="up_down", octaves=1)
+        # First == last (palindrome)
+        assert up_down[0] == pytest.approx(up_down[-1])
+
+    def test_down_reverses_up(self):
+        up = arpeggio_from_chord("Cmaj", pattern="up", octaves=1)
+        down = arpeggio_from_chord("Cmaj", pattern="down", octaves=1)
+        assert down == list(reversed(up))
+
+    def test_am7(self):
+        """Am7 = minor 7th chord."""
+        freqs = arpeggio_from_chord("Am7", pattern="up", octaves=1)
+        assert len(freqs) == 4  # root, m3, 5, m7
+
+    def test_random_pattern_is_shuffled(self):
+        freqs = arpeggio_from_chord("Cmaj9", pattern="random",
+                                    octaves=1, seed=42)
+        base = arpeggio_from_chord("Cmaj9", pattern="up", octaves=1)
+        # Same frequencies, different order
+        assert sorted(freqs) == sorted(base)
+
+    def test_invalid_chord_type_raises(self):
+        with pytest.raises(ValueError):
+            arpeggio_from_chord("Cwat", pattern="up")
+
+    def test_invalid_pattern_raises(self):
+        with pytest.raises(ValueError):
+            arpeggio_from_chord("Cmaj", pattern="upsidedown")
         assert SACRED_RATIOS["golden"] == pytest.approx(1.618, rel=1e-3)

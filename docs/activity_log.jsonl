@@ -11,3 +11,4 @@
 {"ts": "2026-04-24T13:14:33", "session_id": "2026-04-24T13", "action": "feat", "detail": "roadmap expansion: texture+piano_processed builders, Karplus-Strong, Paulstretch, saturation.py, MIDI live-monitor + quantize", "result": "ok"}
 {"ts": "2026-04-24T13:20:19", "session_id": "2026-04-24T13", "action": "bug_fixed", "detail": "fix(ci): add setuptools find directive in pyproject.toml to exclude configs/ and samples/ from package discovery", "result": "ok"}
 {"ts": "2026-04-24T13:23:12", "session_id": "2026-04-24T13", "action": "fix", "detail": "CI lint: remove dead return + ruff I001 auto-fix imports, ship gallery_v2 script", "result": "ok"}
+{"ts": "2026-04-24T13:57:20", "session_id": "2026-04-24T13", "action": "feat", "detail": "10 features: ir_reverb + sidechain + bowed_string + granular pitch_curve + morph_textures builder + delay_pingpong + suggest_eq_cuts + binaural presets extended + viz.py + arpeggio_from_chord + gallery v3", "result": "ok"}

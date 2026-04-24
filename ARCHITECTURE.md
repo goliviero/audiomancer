@@ -10,13 +10,16 @@ Minimal Python audio toolkit for ambient/meditation sound design. Scripts > fram
 audiomancer/
 ├── audiomancer/
 │   ├── __init__.py          # SAMPLE_RATE (44100), DEFAULT_AMPLITUDE (0.5)
-│   ├── synth.py             # Waveforms + drones + pads (seeded jitter_cents) + granular + karplus_strong
-│   ├── binaural.py          # Stereo binaural beats, 6 presets (theta/alpha/delta/solfeggio/om)
-│   ├── effects.py           # Scipy filters (lowpass/highpass) + Pedalboard (reverb/delay/chorus/compress)
+│   ├── synth.py             # Waveforms + drones + pads + granular (w/ pitch_curve) + karplus_strong + bowed_string
+│   ├── binaural.py          # Stereo binaural beats, 9 presets (theta/alpha/delta/solfeggio/om + beta/SMR/high_gamma)
+│   ├── effects.py           # Scipy filters + Pedalboard + delay_pingpong (stereo cross-fed)
 │   │                        # Presets: reverb_hall, reverb_cathedral, delay_long, chorus_subtle
+│   ├── ir_reverb.py         # Convolution reverb: load_ir + convolve_reverb + 4 synthetic presets
+│   ├── sidechain.py         # envelope_follower + sidechain_duck (ducking compressor)
 │   ├── saturation.py        # tape_saturate (asymmetric soft-clip) + tape_hiss + vinyl_wow (pitch flutter)
 │   ├── layers.py            # mix (dB), layer (linear), crossfade, loop_seamless
 │   │                        # normalize_lufs (K-weighted ITU-R BS.1770), measure_lufs
+│   │                        # suggest_eq_cuts (anti-masking advisor via spectral_balance)
 │   ├── modulation.py        # LFOs (sine/triangle), drift (fast: uniform_filter1d), evolving_lfo
 │   │                        # multi_lfo (stack of N non-sync LFOs), random_walk (OU bounded, lfilter-vectorized)
 │   │                        # apply_amplitude_mod, apply_filter_sweep
@@ -32,7 +35,8 @@ audiomancer/
 │   │                        # micro_silence_env (multiplicative duck envelope)
 │   ├── builders.py          # Parametric stem generators for config-driven rendering
 │   │                        # REGISTRY: pad_alive, arpege_bass, pendulum_bass, binaural_beat,
-│   │                        #          texture (wraps any textures/ preset), piano_processed
+│   │                        #          texture (wraps any textures/ preset), piano_processed,
+│   │                        #          morph_textures (spectral A->B transition)
 │   │                        # derived_seed helper for per-role stem coordination
 │   ├── piano_presets.py     # 3 piano processing presets (bass_drone/mid_pad/sparse_notes)
 │   │                        # Shared between scripts/piano/process_piano.py and builders.piano_processed
@@ -44,7 +48,8 @@ audiomancer/
 │   ├── spectral.py          # FFT: STFT/ISTFT, freeze, blur, pitch_shift, spectral_gate, morph
 │   │                        # paulstretch (extreme time-stretch via phase randomization)
 │   ├── spatial.py           # pan, auto_pan, stereo_width, mid/side, haas_width, rotate
-│   ├── harmony.py           # Scales, tuning (just/Pythagorean), chord generators, sacred/solfeggio freqs
+│   ├── harmony.py           # Scales, tuning (just/Pythagorean), chord generators, arpeggio_from_chord
+│   ├── viz.py               # matplotlib waveform/spectrum/combo PNGs (optional [viz] extra)
 │   └── envelope.py          # ADSR (linear/exp), AR, multi-segment, breathing, swell, gate_pattern
 ├── configs/
 │   ├── __init__.py

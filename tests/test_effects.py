@@ -11,6 +11,7 @@ from audiomancer.effects import (
     compress,
     delay,
     delay_long,
+    delay_pingpong,
     highpass,
     lowpass,
     reverb,
@@ -231,3 +232,41 @@ class TestProcessBoard:
         out = _process_board(board, sig, SR)
         assert out.ndim == 2
         assert out.shape == sig.shape
+
+
+class TestDelayPingpong:
+    """Ping-pong stereo delay."""
+
+    def test_mono_input_becomes_stereo(self):
+        from audiomancer.synth import sine
+        sig = sine(440.0, 0.5, sample_rate=SR)
+        out = delay_pingpong(sig, delay_seconds=0.1, sample_rate=SR)
+        assert out.ndim == 2
+        assert out.shape[0] == len(sig)
+
+    def test_stereo_shape_preserved(self):
+        from audiomancer.synth import sine
+        mono = sine(440.0, 0.5, sample_rate=SR)
+        sig = np.column_stack([mono, mono])
+        out = delay_pingpong(sig, delay_seconds=0.1, sample_rate=SR)
+        assert out.shape == sig.shape
+
+    def test_mix_zero_is_dry(self):
+        from audiomancer.synth import sine
+        mono = sine(440.0, 0.5, amplitude=0.5, sample_rate=SR)
+        sig = np.column_stack([mono, mono])
+        out = delay_pingpong(sig, delay_seconds=0.1, mix=0.0, sample_rate=SR)
+        assert np.allclose(out, sig, atol=1e-6)
+
+    def test_cross_feedback_produces_stereo_difference(self):
+        """With ping-pong, the delayed signal swaps sides => L != R after delay."""
+        from audiomancer.synth import sine
+        mono = sine(440.0, 1.0, amplitude=0.5, sample_rate=SR)
+        # Input only on L channel (R silent)
+        sig = np.column_stack([mono, np.zeros_like(mono)])
+        out = delay_pingpong(sig, delay_seconds=0.2, feedback=0.5,
+                             mix=0.5, cross_feedback=1.0, sample_rate=SR)
+        # After the first delay tap at 0.2s, there should be energy on R
+        delay_idx = int(0.2 * SR)
+        tail_r = np.max(np.abs(out[delay_idx + 100:delay_idx + 1000, 1]))
+        assert tail_r > 0.05

@@ -395,3 +395,106 @@ def fibonacci_freqs(root_hz: float, n: int = 8) -> list[float]:
             freq *= 2
         freqs.append(freq)
     return sorted(set(freqs))[:n]
+
+
+# ---------------------------------------------------------------------------
+# Arpeggio helper — build frequency sequences from chord names
+# ---------------------------------------------------------------------------
+
+_EXTENDED_RATIOS = {
+    # Extends just_chord with 7/9/11/13 colors
+    "major":   [1 / 1, 5 / 4, 3 / 2],
+    "minor":   [1 / 1, 6 / 5, 3 / 2],
+    "sus2":    [1 / 1, 9 / 8, 3 / 2],
+    "sus4":    [1 / 1, 4 / 3, 3 / 2],
+    "power":   [1 / 1, 3 / 2],
+    "maj7":    [1 / 1, 5 / 4, 3 / 2, 15 / 8],
+    "min7":    [1 / 1, 6 / 5, 3 / 2, 9 / 5],
+    "dim":     [1 / 1, 6 / 5, 64 / 45],
+    "aug":     [1 / 1, 5 / 4, 25 / 16],
+    "maj9":    [1 / 1, 5 / 4, 3 / 2, 15 / 8, 9 / 4],
+    "min9":    [1 / 1, 6 / 5, 3 / 2, 9 / 5, 9 / 4],
+    "add9":    [1 / 1, 5 / 4, 3 / 2, 9 / 4],
+}
+
+
+def _parse_chord_name(name: str) -> tuple[str, str]:
+    """Split 'Cmaj9' -> ('C', 'maj9'), 'Am7' -> ('A', 'min7'), 'Fsus2' -> ('F', 'sus2')."""
+    # Extract root note (1 letter + optional #/b)
+    if len(name) >= 2 and name[1] in "#b":
+        root = name[:2]
+        rest = name[2:]
+    else:
+        root = name[:1]
+        rest = name[1:]
+
+    rest = rest.strip().lower()
+    # Normalize common aliases
+    if rest in ("", "maj"):
+        chord_type = "major"
+    elif rest == "m":
+        chord_type = "minor"
+    elif rest == "m7":
+        chord_type = "min7"
+    elif rest == "m9":
+        chord_type = "min9"
+    else:
+        chord_type = rest  # e.g. "maj7", "sus2", "dim", "maj9", "add9"
+
+    if chord_type not in _EXTENDED_RATIOS:
+        raise ValueError(
+            f"Unknown chord type {chord_type!r} in {name!r}. "
+            f"Valid: {list(_EXTENDED_RATIOS)}"
+        )
+    return root, chord_type
+
+
+def arpeggio_from_chord(name: str, octaves: int = 1, pattern: str = "up",
+                        root_octave: int = 3,
+                        tuning: float = A4_HZ,
+                        seed: int | None = None) -> list[float]:
+    """Build a list of frequencies from a chord name + pattern.
+
+    Args:
+        name: Chord name like 'Cmaj9', 'Am7', 'Fsus2', 'G', 'Ebmin9'.
+        octaves: Number of octaves to span (1 = base chord only).
+        pattern: 'up', 'down', 'up_down' (palindrome), 'random'.
+        root_octave: Starting octave for the root note (C3 = 3, etc.).
+        tuning: A4 reference in Hz (default 440).
+        seed: Random seed (only for pattern='random').
+
+    Returns:
+        List of frequencies in Hz.
+
+    Example:
+        arpeggio_from_chord('Cmaj9', octaves=2, pattern='up_down')
+        -> [C3 notes... D3... E3... G3... B3... C4 notes... D4... -> palindrome back]
+    """
+    root_note, chord_type = _parse_chord_name(name)
+    root_name = f"{root_note}{root_octave}"
+    root_hz = note_to_hz(root_name, tuning=tuning)
+
+    ratios = _EXTENDED_RATIOS[chord_type]
+    notes = []
+    for oct_offset in range(octaves):
+        octave_mult = 2 ** oct_offset
+        for r in ratios:
+            notes.append(root_hz * r * octave_mult)
+
+    if pattern == "up":
+        return notes
+    if pattern == "down":
+        return list(reversed(notes))
+    if pattern == "up_down":
+        # Palindrome: up then back down to starting note [C,E,G] -> [C,E,G,E,C]
+        if len(notes) < 2:
+            return notes
+        return notes + list(reversed(notes[:-1]))
+    if pattern == "random":
+        rng = np.random.default_rng(seed)
+        shuffled = list(notes)
+        rng.shuffle(shuffled)
+        return shuffled
+    raise ValueError(
+        f"Unknown pattern {pattern!r}. Valid: up, down, up_down, random."
+    )

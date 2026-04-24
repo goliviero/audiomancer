@@ -53,6 +53,22 @@ class TestPresets:
         assert "om_theta" in PRESETS
         assert PRESETS["theta_deep"]["beat"] == 4.0
 
+    def test_extended_presets(self):
+        """beta_13hz, smr_14hz, high_gamma_60hz added post-V005."""
+        for name, expected_beat in (
+            ("beta_13hz", 13.0),
+            ("smr_14hz", 14.0),
+            ("high_gamma_60hz", 60.0),
+        ):
+            assert name in PRESETS
+            assert PRESETS[name]["beat"] == expected_beat
+
+    def test_from_preset_extended(self):
+        sig = from_preset("smr_14hz", 0.5, sample_rate=SR)
+        assert sig.shape == (int(SR * 0.5), 2)
+        # L/R should differ (binaural)
+        assert not np.allclose(sig[:, 0], sig[:, 1])
+
     def test_from_preset(self):
         sig = from_preset("theta_deep", 1.0, sample_rate=SR)
         assert sig.shape == (SR, 2)

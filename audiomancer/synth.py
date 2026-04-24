@@ -276,12 +276,70 @@ def karplus_strong(frequency: float, duration_sec: float,
 
 
 # ---------------------------------------------------------------------------
+# Bowed string — simplified Smith/Perry friction model (cello/violin flavor)
+# ---------------------------------------------------------------------------
+
+def bowed_string(frequency: float, duration_sec: float,
+                 bow_pressure: float = 0.5, bow_velocity: float = 0.7,
+                 decay: float = 0.9995, brightness: float = 0.6,
+                 amplitude: float = DEFAULT_AMPLITUDE,
+                 seed: int | None = None,
+                 sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Physical bowed-string synthesis (cello/violin flavor).
+
+    Based on a simplified Smith/Perry friction model: a delay line loops
+    with a nonlinear friction curve (tanh) driven by bow velocity and
+    pressure. Complement to karplus_strong (plucked string).
+
+    Args:
+        frequency: Fundamental in Hz.
+        duration_sec: Total duration.
+        bow_pressure: 0.3 = light (dull), 0.8 = heavy (scratchy).
+        bow_velocity: 0.4 = slow bow, 0.9 = fast bow.
+        decay: Delay-line feedback factor (very close to 1 for sustained bow).
+        brightness: 0 = dark, 1 = bright (feedback lowpass mix).
+        amplitude: Peak amplitude.
+        seed: Random seed for initial delay-line noise.
+        sample_rate: Sample rate.
+
+    Returns:
+        Mono signal (n_samples,).
+    """
+    buf_size = max(2, int(sample_rate / max(frequency, 1e-3)))
+    rng = np.random.default_rng(seed)
+    buf = rng.uniform(-0.05, 0.05, size=buf_size)  # small initial noise
+
+    n = int(duration_sec * sample_rate)
+    out = np.zeros(n)
+    # Bow pressure scales the friction curve's steepness
+    # Higher pressure -> steeper curve -> more harmonics
+    friction_steep = 2.0 + 6.0 * bow_pressure
+
+    for i in range(n):
+        idx = i % buf_size
+        prev = (idx - 1) % buf_size
+        # Bow excitation: velocity minus the string's current velocity
+        string_vel = buf[idx]
+        bow_input = bow_velocity - string_vel
+        # Nonlinear friction via tanh (Smith/Perry style)
+        friction = np.tanh(bow_input * friction_steep) * 0.3
+
+        out[i] = buf[idx] + friction
+        avg = 0.5 * (buf[idx] + buf[prev])
+        # Feedback with brightness-controlled smoothing + friction excitation
+        buf[idx] = (brightness * buf[idx] + (1 - brightness) * avg) * decay + friction * 0.2
+
+    return _normalize_peak(out, amplitude)
+
+
+# ---------------------------------------------------------------------------
 # Granular synthesis
 # ---------------------------------------------------------------------------
 
 def granular(source: np.ndarray, duration_sec: float,
              grain_size_ms: float = 60.0, grain_density: float = 8.0,
              pitch_spread: float = 0.2, position_spread: float = 1.0,
+             pitch_curve: np.ndarray | None = None,
              amplitude: float = DEFAULT_AMPLITUDE,
              seed: int | None = None,
              sample_rate: int = SAMPLE_RATE) -> np.ndarray:
@@ -295,8 +353,14 @@ def granular(source: np.ndarray, duration_sec: float,
         duration_sec: Output duration in seconds.
         grain_size_ms: Size of each grain in milliseconds.
         grain_density: Average grains triggered per second.
-        pitch_spread: Pitch randomisation range in octaves (0=none, 1=±1 oct).
-        position_spread: How much of the source buffer to scan (0–1).
+        pitch_spread: Pitch randomisation range in octaves (0=none, 1=+-1 oct).
+            Ignored when pitch_curve is provided.
+        position_spread: How much of the source buffer to scan (0-1).
+        pitch_curve: Optional array of length n_out giving the CENTER pitch
+            shift in octaves at each sample. Each grain samples the curve at
+            its output position, then adds a small random jitter scaled by
+            pitch_spread (if > 0). Lets you ramp a piano sample from 0 to +1
+            octave over 30 seconds, for example.
         amplitude: Output peak amplitude.
         seed: Random seed. None = unique each time.
         sample_rate: Sample rate.
@@ -333,8 +397,15 @@ def granular(source: np.ndarray, duration_sec: float,
             grain = np.pad(grain, (0, grain_samples - len(grain)))
 
         # Pitch shift via resampling
-        if pitch_spread > 0:
-            ratio = 2 ** (rng.uniform(-pitch_spread, pitch_spread))
+        # If pitch_curve given: sample curve at this grain's out_pos as center
+        # (+ optional small jitter from pitch_spread)
+        center_shift = 0.0
+        if pitch_curve is not None:
+            center_shift = float(pitch_curve[min(out_pos, len(pitch_curve) - 1)])
+        jitter = rng.uniform(-pitch_spread, pitch_spread) if pitch_spread > 0 else 0.0
+        total_shift = center_shift + jitter
+        if total_shift != 0.0:
+            ratio = 2 ** total_shift
             indices = np.linspace(0, len(grain) - 1, int(len(grain) / ratio))
             indices = np.clip(indices, 0, len(grain) - 1)
             grain_resampled = np.interp(indices, np.arange(len(grain)), grain)

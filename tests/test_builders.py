@@ -94,3 +94,17 @@ class TestPianoProcessed:
         )
         assert out.ndim == 2
         assert np.max(np.abs(out)) > 0
+
+
+class TestMorphTextures:
+    def test_registry_has_morph(self):
+        assert "morph_textures" in REGISTRY
+
+    def test_smoke(self):
+        out = REGISTRY["morph_textures"](
+            duration=DUR, seed=42, sample_rate=SR,
+            texture_a={"name": "noise_wash", "params": {}},
+            texture_b={"name": "noise_wash", "params": {}},
+        )
+        assert out.ndim == 2
+        assert np.max(np.abs(out)) > 0

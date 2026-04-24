@@ -36,6 +36,10 @@ PRESETS = {
     "solfeggio_528":  {"carrier": 528.0, "beat": 4.0},     # "Love frequency"
     "solfeggio_432":  {"carrier": 432.0, "beat": 6.0},     # Natural tuning
     "om_theta":       {"carrier": 136.1, "beat": 4.0},     # Om + theta
+    # Extended: focus/cognition band
+    "beta_13hz":      {"carrier": 264.0, "beat": 13.0},    # Calm focus / attention
+    "smr_14hz":       {"carrier": 264.0, "beat": 14.0},    # Sensorimotor rhythm, sharp cognition
+    "high_gamma_60hz": {"carrier": 264.0, "beat": 60.0},   # High gamma, short sessions only
 }
 
 

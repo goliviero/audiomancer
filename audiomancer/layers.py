@@ -282,3 +282,83 @@ def _k_weighting_sos(sample_rate: int) -> np.ndarray:
     sos2 = [b0_2, b1_2, b2_2, 1.0, a1_2, a2_2]
 
     return np.array([sos1, sos2])
+
+
+# ---------------------------------------------------------------------------
+# EQ cut suggester — proposes non-destructive cuts to reduce stem masking
+# ---------------------------------------------------------------------------
+
+def suggest_eq_cuts(stems: dict[str, np.ndarray],
+                    overlap_threshold_db: float = -12.0,
+                    suggested_cut_db: float = 3.0,
+                    fft_size: int = 4096,
+                    sample_rate: int = SAMPLE_RATE) -> list[tuple]:
+    """Analyze a stem set and propose EQ cuts to reduce mid-band masking.
+
+    Uses audiomancer.spectral.spectral_balance() to find bands where two or
+    more stems are both loud, then suggests cutting the less-dominant stem's
+    energy in that band so the dominant one breathes.
+
+    Args:
+        stems: Dict of {name: signal}.
+        overlap_threshold_db: Flag bands where two stems exceed this level.
+        suggested_cut_db: dB amount to propose on the non-dominant stem.
+        fft_size: Analysis FFT size.
+        sample_rate: Sample rate.
+
+    Returns:
+        List of (stem_name, band_center_hz, cut_db) tuples. Purely advisory:
+        nothing is applied to the signal. Users can manually apply via a
+        peaking EQ or lowshelf/highshelf filter.
+
+    Band-center Hz is the geometric mean of the band's lo and hi edges
+    (musically representative).
+    """
+    from audiomancer.spectral import spectral_balance
+
+    result = spectral_balance(stems, fft_size=fft_size, sample_rate=sample_rate)
+    band_labels = result["bands"]
+    # `overlap_warnings` is list of (band_label, stem_a, stem_b)
+    warnings = result.get("overlap_warnings", [])
+
+    # Build band-label -> (lo_hz, hi_hz) map using the default bands used by
+    # spectral_balance (we mirror its defaults here; if caller passed custom
+    # bands to spectral_balance, this would need aligning).
+    default_bands = {
+        "sub": (20, 60),
+        "low": (60, 200),
+        "low-mid": (200, 500),
+        "mid": (500, 2000),
+        "hi-mid": (2000, 6000),
+        "high": (6000, 12000),
+        "air": (12000, 20000),
+    }
+
+    # For each overlap warning, determine the less-dominant stem in that band
+    stems_per_band = result["stems"]  # dict of {name: [db per band]}
+    suggestions = []
+    for band, stem_a, stem_b in warnings:
+        if band not in default_bands:
+            continue
+        lo, hi = default_bands[band]
+        center = float(np.sqrt(lo * hi))  # geometric mean
+        # Pick less-dominant stem in this band
+        try:
+            band_idx = band_labels.index(band)
+        except ValueError:
+            continue
+        db_a = stems_per_band[stem_a][band_idx]
+        db_b = stems_per_band[stem_b][band_idx]
+        cut_target = stem_a if db_a < db_b else stem_b
+        # Only suggest if both are above the threshold (sanity)
+        if max(db_a, db_b) >= overlap_threshold_db:
+            suggestions.append((cut_target, round(center, 1), suggested_cut_db))
+    # Dedup (one cut per stem+band)
+    seen = set()
+    unique = []
+    for s in suggestions:
+        key = (s[0], s[1])
+        if key not in seen:
+            unique.append(s)
+            seen.add(key)
+    return unique

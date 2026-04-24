@@ -79,10 +79,12 @@ export_wav(master, "output/layered_mix.wav")
 
 | Module | What it does |
 |--------|-------------|
-| `synth` | Sine, square, saw, triangle, noises, drones, chord pads (w/ seeded jitter), granular, **karplus_strong** (plucked string) |
-| `binaural` | Stereo binaural beats with presets (theta, alpha, delta, solfeggio) |
-| `effects` | Scipy filters (LP/HP) + pedalboard effects (reverb, delay, chorus, compression) |
-| `layers` | Mix signals, layer stems, crossfade, loop, LUFS normalization |
+| `synth` | Sine, square, saw, triangle, noises, drones, chord pads (w/ seeded jitter), granular (w/ pitch_curve), **karplus_strong** (plucked), **bowed_string** (cello/violin) |
+| `binaural` | Stereo binaural beats, 9 presets (theta/alpha/delta/solfeggio/om + beta/SMR/high_gamma) |
+| `effects` | Scipy filters (LP/HP) + pedalboard (reverb, delay, chorus, compression) + `delay_pingpong` |
+| `ir_reverb` | Convolution reverb: `load_ir`, `convolve_reverb`, 4 synthetic presets (room/hall/cathedral/plate) |
+| `sidechain` | Envelope follower + ducking compressor — make pads breathe when chimes emerge |
+| `layers` | Mix signals, layer stems, crossfade, LUFS normalization, **suggest_eq_cuts** (masking detector) |
 | `field` | Field recording processing: cleanup, noise gate, reverb, fades |
 | `utils` | WAV I/O (auto-resample), normalize, fade in/out, mono/stereo conversion, `load_sample()` |
 | `modulation` | LFOs, drift, evolving_lfo, `multi_lfo` (stack), `random_walk` (OU bounded), filter sweep |
@@ -95,8 +97,9 @@ export_wav(master, "output/layered_mix.wav")
 | `piano_presets` | 3 presets (bass_drone, mid_pad, sparse_notes) for raw piano WAVs — shared by CLI + builder |
 | `quick` | One-liner API: q.drone, q.pad, q.binaural, q.texture, q.mix, q.save |
 | `spectral` | FFT processing: freeze, blur, pitch shift, spectral gate, morph, **paulstretch** (extreme time-stretch) |
+| `viz` | matplotlib PNG helpers (waveform / spectrum / combo) — optional `[viz]` extra |
+| `harmony` | Scales, just intonation, Pythagorean tuning, chord generators, **arpeggio_from_chord** |
 | `spatial` | Pan, auto-pan, stereo width, mid/side, Haas effect, rotate |
-| `harmony` | Scales, just intonation, Pythagorean tuning, chord generators, sacred ratios |
 | `envelope` | ADSR (linear/exponential), AR, multi-segment, breathing, swell, gate patterns |
 
 ---
@@ -115,6 +118,9 @@ Install: `pip install -e .` or `pip install numpy scipy soundfile pedalboard`
   - macOS: `brew install fluidsynth`
   - Windows: `winget install FluidSynth.FluidSynth`
   - Linux: `apt install fluidsynth`
+
+**Optional (PNG visualization):**
+- `matplotlib` via `pip install audiomancer[viz]`
 
 ---
 

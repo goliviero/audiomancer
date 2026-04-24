@@ -144,6 +144,56 @@ def delay_long(signal: np.ndarray, sample_rate: int = SAMPLE_RATE) -> np.ndarray
     return delay(signal, delay_seconds=0.5, feedback=0.4, mix=0.3, sample_rate=sample_rate)
 
 
+def delay_pingpong(signal: np.ndarray, delay_seconds: float = 0.5,
+                   feedback: float = 0.35, mix: float = 0.3,
+                   cross_feedback: float = 0.7,
+                   sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+    """Ping-pong stereo delay: echoes alternate L -> R -> L.
+
+    Simple stereo-cross-feedback delay. Converts mono to stereo if needed.
+    Classic ambient effect for widening plucks and chimes.
+
+    Args:
+        signal: Input signal (mono or stereo).
+        delay_seconds: Delay time between taps.
+        feedback: Same-channel feedback (0.0 = one bounce, 0.9 = long trail).
+        mix: Wet/dry mix (0 = dry, 1 = wet only).
+        cross_feedback: Portion of each channel's echo that feeds the OTHER
+            channel's delay line (1.0 = pure ping-pong, 0.0 = 2 independent delays).
+        sample_rate: Sample rate.
+
+    Returns:
+        Stereo signal with ping-pong echoes.
+    """
+    from audiomancer.utils import mono_to_stereo
+
+    if signal.ndim == 1:
+        signal = mono_to_stereo(signal)
+
+    n = signal.shape[0]
+    delay_samples = int(delay_seconds * sample_rate)
+    if delay_samples <= 0:
+        return signal.copy()
+
+    wet_l = np.zeros(n)
+    wet_r = np.zeros(n)
+
+    fb_self = feedback * (1 - cross_feedback)
+    fb_cross = feedback * cross_feedback
+    for i in range(n):
+        l_in = signal[i, 0]
+        r_in = signal[i, 1]
+        l_delayed = wet_l[i - delay_samples] if i >= delay_samples else 0.0
+        r_delayed = wet_r[i - delay_samples] if i >= delay_samples else 0.0
+        # L tap receives: dry L + feedback of L + cross from R
+        wet_l[i] = l_in + l_delayed * fb_self + r_delayed * fb_cross
+        wet_r[i] = r_in + r_delayed * fb_self + l_delayed * fb_cross
+
+    out_l = signal[:, 0] * (1 - mix) + wet_l * mix
+    out_r = signal[:, 1] * (1 - mix) + wet_r * mix
+    return np.column_stack([out_l, out_r])
+
+
 def chorus_subtle(signal: np.ndarray, sample_rate: int = SAMPLE_RATE) -> np.ndarray:
     """Subtle chorus for width and movement."""
     return chorus(signal, rate_hz=0.5, depth=0.15, mix=0.3, sample_rate=sample_rate)

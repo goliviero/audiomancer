@@ -314,6 +314,32 @@ def texture(duration: float, seed: int, sample_rate: int,
 # Piano processed — load a recorded piano WAV + apply a piano_presets preset
 # ---------------------------------------------------------------------------
 
+def morph_textures(duration: float, seed: int, sample_rate: int,
+                   texture_a: dict, texture_b: dict) -> np.ndarray:
+    """Generate 2 textures and morph A -> B across the duration.
+
+    Args:
+        texture_a / texture_b: each a dict with keys:
+            - "name": texture preset name (e.g. "crystal_shimmer")
+            - "params": dict of texture-specific params (e.g. {"frequency": 396.0})
+
+    Returns stereo ndarray.
+    """
+    from audiomancer.spectral import morph as _morph
+    from audiomancer.textures import generate as _gen
+
+    sig_a = _gen(
+        texture_a["name"], duration_sec=duration, seed=seed,
+        sample_rate=sample_rate, **texture_a.get("params", {}),
+    )
+    sig_b = _gen(
+        texture_b["name"], duration_sec=duration, seed=seed + 1,
+        sample_rate=sample_rate, **texture_b.get("params", {}),
+    )
+    min_len = min(sig_a.shape[0], sig_b.shape[0])
+    return _morph(sig_a[:min_len], sig_b[:min_len], sample_rate=sample_rate)
+
+
 def piano_processed(duration: float, seed: int, sample_rate: int,
                     source_path: str,
                     preset: str = "mid_pad") -> np.ndarray:
@@ -347,4 +373,5 @@ REGISTRY = {
     "binaural_beat": binaural_beat,
     "texture": texture,
     "piano_processed": piano_processed,
+    "morph_textures": morph_textures,
 }

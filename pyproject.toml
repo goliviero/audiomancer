@@ -19,6 +19,9 @@ piano = [
     "mido>=1.3",
     "python-rtmidi>=1.5",
 ]
+viz = [
+    "matplotlib>=3.7",
+]
 
 [tool.setuptools.packages.find]
 include = ["audiomancer*"]

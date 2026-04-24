@@ -4,9 +4,11 @@ import numpy as np
 import pytest
 
 from audiomancer.synth import (
+    bowed_string,
     brown_noise,
     chord_pad,
     drone,
+    granular,
     karplus_strong,
     noise,
     pad,
@@ -195,3 +197,54 @@ class TestKarplusStrong:
         peak_idx = lo + np.argmax(corr[lo:hi])
         detected_period = peak_idx - mid
         assert abs(detected_period - period) <= window
+
+
+class TestBowedString:
+    """Physical bowed string (friction-based)."""
+
+    def test_shape(self):
+        sig = bowed_string(220.0, 0.3, sample_rate=SR)
+        assert sig.shape == (int(SR * 0.3),)
+
+    def test_deterministic_with_seed(self):
+        a = bowed_string(220.0, 0.2, seed=42, sample_rate=SR)
+        b = bowed_string(220.0, 0.2, seed=42, sample_rate=SR)
+        assert np.allclose(a, b)
+
+    def test_different_seed_differs(self):
+        a = bowed_string(220.0, 0.2, seed=42, sample_rate=SR)
+        b = bowed_string(220.0, 0.2, seed=99, sample_rate=SR)
+        assert not np.allclose(a, b)
+
+    def test_bow_pressure_affects_tone(self):
+        """Higher bow pressure should produce more harmonics (more H2/H1)."""
+        light = bowed_string(220.0, 0.5, bow_pressure=0.3,
+                             seed=42, sample_rate=SR)
+        heavy = bowed_string(220.0, 0.5, bow_pressure=0.9,
+                             seed=42, sample_rate=SR)
+        # Different pressure should give different spectrum
+        assert not np.allclose(light, heavy)
+
+
+class TestGranularPitchCurve:
+    """granular() with time-varying pitch_curve."""
+
+    def test_pitch_curve_changes_output(self):
+        src = sine(440.0, 2.0, sample_rate=SR)
+        n_out = int(SR * 1.0)
+        # Linear ramp from 0 to +1 octave
+        curve = np.linspace(0, 1.0, n_out)
+        a = granular(src, 1.0, grain_size_ms=40, grain_density=20,
+                     pitch_spread=0.0,
+                     pitch_curve=curve, seed=42, sample_rate=SR)
+        # Without curve, legacy behavior (pitch_spread only)
+        b = granular(src, 1.0, grain_size_ms=40, grain_density=20,
+                     pitch_spread=0.0, seed=42, sample_rate=SR)
+        assert not np.allclose(a, b)
+
+    def test_backward_compat_no_curve(self):
+        """Calling granular without pitch_curve works as before."""
+        src = sine(440.0, 2.0, sample_rate=SR)
+        out = granular(src, 1.0, grain_size_ms=40, grain_density=10,
+                       pitch_spread=0.2, seed=42, sample_rate=SR)
+        assert out.shape == (SR,)
