@@ -79,7 +79,7 @@ MIX = {
     "density_profile": "random_walk",
     # Optional external sample for the firecrack layer
     "firecrack": {
-        "path": "inbox/501417__visionear__aachen_burning-fireplace-crackling-fire-sounds.wav",
+        "path": "samples/cc0/fireplace_crackling.wav",
         "offset_sec": 30.0,
     },
 }

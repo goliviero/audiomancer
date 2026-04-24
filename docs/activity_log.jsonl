@@ -13,3 +13,4 @@
 {"ts": "2026-04-24T13:23:12", "session_id": "2026-04-24T13", "action": "fix", "detail": "CI lint: remove dead return + ruff I001 auto-fix imports, ship gallery_v2 script", "result": "ok"}
 {"ts": "2026-04-24T13:57:20", "session_id": "2026-04-24T13", "action": "feat", "detail": "10 features: ir_reverb + sidechain + bowed_string + granular pitch_curve + morph_textures builder + delay_pingpong + suggest_eq_cuts + binaural presets extended + viz.py + arpeggio_from_chord + gallery v3", "result": "ok"}
 {"ts": "2026-04-24T14:13:17", "session_id": "2026-04-24T14", "action": "feat", "detail": "ethnic instruments (didgeridoo/handpan/oud/sitar/derbouka) + sampler (pitch-shift + pitched_pad) + gallery v4", "result": "ok"}
+{"ts": "2026-04-24T14:27:16", "session_id": "2026-04-24T14", "action": "chore", "detail": "clean inbox/, move firecrack+didgeridoo to samples/cc0/, trim script 53 to real-sample A/B only", "result": "ok"}

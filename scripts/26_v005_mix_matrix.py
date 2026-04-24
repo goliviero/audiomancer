@@ -32,8 +32,7 @@ from audiomancer.utils import export_wav, load_audio, normalize
 
 SR = 48000
 OUT = project_root / "output" / "V005"
-INBOX = project_root / "inbox"
-FIRECRACK_PATH = INBOX / "501417__visionear__aachen_burning-fireplace-crackling-fire-sounds.wav"
+FIRECRACK_PATH = project_root / "samples" / "cc0" / "fireplace_crackling.wav"
 FIRECRACK_OFFSET = 60.0
 
 DUR = 120  # 2 min

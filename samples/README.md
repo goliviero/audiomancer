@@ -3,6 +3,18 @@
 Acoustic sample library used by Audiomancer for enrichment (granular, loop, layer).
 **Audio files are gitignored** — only this README is tracked.
 
+> **Backup reminder** : since audio in `samples/cc0/` and `samples/own/`
+> never lands on GitHub, back them up to Proton Drive (or another cloud)
+> alongside the rest of your production assets. They are NOT reproducible
+> if lost.
+
+## Current inventory
+
+| Path | Source / License | Used by |
+|---|---|---|
+| `samples/cc0/didgeridoo_C2.wav` | LaSonotheque.fr (CC0-equivalent per their ToS, credit encouraged: "Joseph SARDIN - LaSonotheque.org") | `scripts/53_didgeridoo_real_vs_synth.py` |
+| `samples/cc0/fireplace_crackling.wav` | Freesound ID 501417 (Visionear, CC0) | V005 mix scripts (25/26/27/29) + `configs/V005.py` |
+
 ## Structure
 
 ```
