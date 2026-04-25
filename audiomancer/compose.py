@@ -144,7 +144,8 @@ def stitch(sections: list[np.ndarray],
 
 def make_loopable(stem: np.ndarray,
                   crossfade_sec: float = 5.0,
-                  sample_rate: int = SAMPLE_RATE) -> np.ndarray:
+                  sample_rate: int = SAMPLE_RATE,
+                  boundary_continuity: bool = False) -> np.ndarray:
     """Seal the loop point: crossfade the end back onto the beginning.
 
     When ffmpeg loops a WAV with -stream_loop -1, it jumps from the last
@@ -159,6 +160,12 @@ def make_loopable(stem: np.ndarray,
         stem: Full stem signal (should be at least 2× crossfade_sec long).
         crossfade_sec: Duration of the crossfade overlap at the loop point.
         sample_rate: Sample rate.
+        boundary_continuity: If True, apply a global DC tilt so result[-1]
+            exactly matches result[0]. Useful for aperiodic content like
+            pure noise where the 5s crossfade alone doesn't guarantee a
+            sample-clean ffmpeg -stream_loop join. Per-sample correction
+            is delta/N (~1e-8 for typical noise), inaudible. Default off
+            to preserve exact-equality behavior for musical content.
 
     Returns:
         Same-length stem with a smooth loop point baked in.
@@ -181,6 +188,17 @@ def make_loopable(stem: np.ndarray,
     # Replace the tail with the blend
     result = stem.copy()
     result[-xf_samples:] = blended
+
+    if boundary_continuity:
+        boundary_delta = result[-1] - result[0]
+        if np.any(np.abs(boundary_delta) > 1e-6):
+            n = result.shape[0]
+            ramp = np.linspace(0.0, 1.0, n)
+            if result.ndim == 2:
+                result = result - ramp[:, None] * boundary_delta
+            else:
+                result = result - ramp * boundary_delta
+
     return result
 
 

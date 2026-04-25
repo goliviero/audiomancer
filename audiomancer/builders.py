@@ -682,6 +682,86 @@ def subliminal_sine(duration: float, seed: int, sample_rate: int,
 # Registry — string key -> builder function
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Layered stereo brown noise — multi-band cacophony for sleep/focus
+# ---------------------------------------------------------------------------
+
+def layered_brown_stereo(duration: float, seed: int, sample_rate: int,
+                         layers: list,
+                         n_streams_per_channel: int = 6,
+                         hp_hz: float = 40.0,
+                         hp_detrend_hz: float = 10.0,
+                         breath_cycle_sec: float = 0.0,
+                         breath_depth_db: float = 0.0) -> np.ndarray:
+    """Layered stereo brown noise — sleepy cacophony of deep rumbling.
+
+    Each layer = N independent brown streams (cumsum) summed -> detrend HP ->
+    LP -> HP. Left and right channels use independent stream sets (true
+    stereo decorrelation, L/R correlation ~ 0).
+
+    The MindAmend "smoothed" principle: more streams summed = lower envelope
+    variance (CLT), so the perceived 'swells' from random low-freq bunching
+    fade out. n_streams_per_channel >= 6 is usually enough.
+
+    Args:
+        layers: list of (lp_hz, db_offset). 0 dB = nominal weight 1.0.
+            Example: [(500, 0.0), (1550, 0.0), (2500, -10.0), (3500, -14.0)]
+        n_streams_per_channel: brown streams summed per channel per layer.
+        hp_hz: highpass cutoff applied to each layer (post-LP).
+        hp_detrend_hz: pre-LP highpass to remove cumsum DC drift.
+        breath_cycle_sec: amplitude breath period (s). 0 = no breath.
+        breath_depth_db: +/-dB amplitude variation. 0 = no breath.
+
+    Returns stereo ndarray (n, 2), peak-normalized to 0.85.
+    """
+    rng = np.random.default_rng(seed)
+    n = int(duration * sample_rate)
+    blended = np.zeros((n, 2))
+
+    for lp_hz, db_offset in layers:
+        weight = 10 ** (db_offset / 20)
+        left = np.zeros(n)
+        right = np.zeros(n)
+        for _ in range(n_streams_per_channel):
+            bl = np.cumsum(rng.standard_normal(n))
+            br = np.cumsum(rng.standard_normal(n))
+            pl = np.max(np.abs(bl))
+            pr = np.max(np.abs(br))
+            if pl > 0:
+                bl = bl / pl
+            if pr > 0:
+                br = br / pr
+            left += bl
+            right += br
+
+        # Detrend cumsum DC drift, then bandpass
+        left = highpass(left, cutoff_hz=hp_detrend_hz, sample_rate=sample_rate)
+        right = highpass(right, cutoff_hz=hp_detrend_hz, sample_rate=sample_rate)
+        left = lowpass(left, cutoff_hz=lp_hz, sample_rate=sample_rate)
+        right = lowpass(right, cutoff_hz=lp_hz, sample_rate=sample_rate)
+        left = highpass(left, cutoff_hz=hp_hz, sample_rate=sample_rate)
+        right = highpass(right, cutoff_hz=hp_hz, sample_rate=sample_rate)
+
+        stereo_layer = np.column_stack([left, right])
+        peak = np.max(np.abs(stereo_layer))
+        if peak > 0:
+            stereo_layer = stereo_layer / peak
+        blended += weight * stereo_layer
+
+    # Optional breath for anti-fatigue on extended (10h) listening
+    if breath_cycle_sec > 0 and breath_depth_db > 0:
+        depth_linear = 10 ** (breath_depth_db / 20) - 1.0
+        breath = lfo_sine(duration, rate_hz=1.0 / breath_cycle_sec,
+                          depth=depth_linear, offset=1.0,
+                          sample_rate=sample_rate)
+        blended = apply_amplitude_mod(blended, breath)
+
+    peak = np.max(np.abs(blended))
+    if peak > 0:
+        blended = blended * 0.85 / peak
+    return blended
+
+
 REGISTRY = {
     "pad_alive": pad_alive,
     "pendulum_bass": pendulum_bass,
@@ -696,4 +776,5 @@ REGISTRY = {
     "ochre_pad": ochre_pad,
     "sparse_sample_events": sparse_sample_events,
     "subliminal_sine": subliminal_sine,
+    "layered_brown_stereo": layered_brown_stereo,
 }

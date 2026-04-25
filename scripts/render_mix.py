@@ -188,7 +188,10 @@ def main():
         stem = master_chain(stem, sample_rate=sr)
 
     # --- Loop seal + optional pre-fade ---
-    stem = make_loopable(stem, crossfade_sec=5.0, sample_rate=sr)
+    stem = make_loopable(
+        stem, crossfade_sec=5.0, sample_rate=sr,
+        boundary_continuity=meta.get("loop_boundary_continuity", False),
+    )
     pre_fade = meta.get("pre_fade_sec", 0.0)
     if pre_fade > 0:
         stem = apply_pre_fade(stem, fade_sec=pre_fade, sample_rate=sr)
