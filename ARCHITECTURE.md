@@ -39,7 +39,9 @@ audiomancer/
 │   ├── builders.py          # Parametric stem generators for config-driven rendering
 │   │                        # REGISTRY: pad_alive, arpege_bass, pendulum_bass, binaural_beat,
 │   │                        #          texture, piano_processed, morph_textures,
-│   │                        #          instrument_synth (ethnic 5), instrument_sampled (CC0 WAV + pitch-shift)
+│   │                        #          instrument_synth (ethnic 5), instrument_sampled (CC0 WAV + pitch-shift),
+│   │                        #          foundation_drone, ochre_pad, sparse_sample_events, subliminal_sine,
+│   │                        #          layered_brown_stereo (multi-band stereo decorrelated noise, V007)
 │   │                        # derived_seed helper for per-role stem coordination
 │   ├── piano_presets.py     # 3 piano processing presets (bass_drone/mid_pad/sparse_notes)
 │   │                        # Shared between scripts/piano/process_piano.py and builders.piano_processed
@@ -56,7 +58,9 @@ audiomancer/
 │   └── envelope.py          # ADSR (linear/exp), AR, multi-segment, breathing, swell, gate_pattern
 ├── configs/
 │   ├── __init__.py
-│   └── V005.py              # V005 focus gamma config (META + STEMS + MIX)
+│   ├── V005.py              # V005 focus gamma config (META + STEMS + MIX)
+│   ├── V006*.py             # V006 Muladhara root chakra + variants (braise/cavern/ember/...)
+│   └── V007.py              # V007 brown noise 10h sleep (layered_brown_stereo + boundary_continuity)
 ├── scripts/
 │   ├── render_stem.py       # GENERIC: python render_stem.py --config V005 --stem warm_pad
 │   ├── render_mix.py        # GENERIC: python render_mix.py --config V005 --preview
