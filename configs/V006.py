@@ -1,5 +1,7 @@
 """V006 config — Muladhara Root Chakra (grounding / sleep meditation).
 
+# FROZEN — V006 livré en production, ne plus modifier.
+
 Brief: 5:00 ambient loop, C minor anchored on C2 (65.41 Hz) and C3 (130.81 Hz).
 48kHz / 24-bit WAV. Integrated LUFS -20 (gated, BS.1770), true peak ceiling
 -3 dBTP. Pre-fade 1.5s in/out.

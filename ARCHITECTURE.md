@@ -76,7 +76,7 @@ audiomancer/
 │       ├── process_piano.py # CLI wrapper around piano_presets (bass_drone/mid_pad/sparse_notes)
 │       ├── quantize_midi.py # Post-record grid quantization (1/4..1/32, strength param)
 │       └── README.md        # 3-command workflow documentation
-├── tests/                   # 20 test files, 398 tests passing
+├── tests/                   # 23 test files, 489 tests passing
 ├── samples/                 # Source audio (gitignored, cc0/ + own/ structure)
 ├── assets/                  # Soundfonts etc. (gitignored)
 └── output/                  # Generated WAV (gitignored)
@@ -191,4 +191,7 @@ Loop seal: 5s crossfade on loop point via make_loopable()
 
 ## Next Steps
 
-1. **V003 Mycelium production** — 174 Hz solfège stems with earth_hum textures
+1. **V008 Svadhisthana** — D minor, 6 Hz theta, source `singing_bowl_A3.wav` (CC0)
+2. **V009 rain** — heavy rain loop, source `heavy_rain_loop_180s.wav` (CC0)
+3. **V010 pink noise 8h** — already config-ready, render + mux
+4. **V011 Manipura** — E phrygian, 10 Hz alpha, source `brass_sustain_E3.wav` (CC0)

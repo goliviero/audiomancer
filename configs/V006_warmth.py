@@ -1,5 +1,7 @@
 """V006_warmth — ember_v2 + continuous mid warmth via evolving_drone layer.
 
+# FROZEN — V006_warmth livré en production, ne plus modifier.
+
 Same base as V006_ember_v2 (dual ochre C/Eb, opposite-phase envelopes,
 foundation + didgeridoo + subliminal). Adds:
 

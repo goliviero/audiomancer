@@ -1,5 +1,7 @@
 """V006_tidal — Muladhara variant with tidal foundation.
 
+# FROZEN — V006_tidal livré en production, ne plus modifier.
+
 Same palette as V006 but the FOUNDATION is gated by a sparse envelope:
 bass present for 20-60s sections, retracts to 30% for 20-60s, then returns.
 Creates the "basses qui se coupent et reviennent" dynamic.

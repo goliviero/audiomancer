@@ -1,5 +1,7 @@
 """V006_braise — ember_v2 + double mid body via breathing_pad layer.
 
+# FROZEN — V006_braise livré en production, ne plus modifier.
+
 Same base as V006_ember_v2. Adds a second pad voice built from a different
 algorithm (texture breathing_pad: chord_pad + chorus + reverb) so the mid
 register has two DISTINCT pads stacking: one tape-saturated (ochre), one

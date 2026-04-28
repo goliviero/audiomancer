@@ -1,5 +1,7 @@
 """V006_cavern — Muladhara variant: breathing foundation + cave ambience.
 
+# FROZEN — V006_cavern livré en production, ne plus modifier.
+
 The foundation SWELLS and RECEDES over the 5min (breathing envelope) —
 very slow tidal movement, more geological than the tidal variant's
 sparse gating.

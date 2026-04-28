@@ -1,11 +1,13 @@
 """V007 config — Brown Noise 10h Deep Sleep (Tier S sleep).
 
+# FROZEN — V007 livré en production, ne plus modifier.
+
 Layered stereo brown noise: 4 bandes (LP 500/1550/2500/3500) decorrele L/R,
 densite 6 streams par canal par layer. 'Sleepy cacophony of deep rumbling'.
 DRY (no reverb), no filter sweep, breath OFF par defaut (anti-fatigue
 disponible via breath_cycle_sec/breath_depth_db si besoin).
 
-Validated: scripts/66_v007_brown_v7.py / 05_deep_dominant.
+Validated: scripts/_archive/v007/66_v007_brown_v7.py / 05_deep_dominant.
 
 Rendered:
     python scripts/render_mix.py --config V007

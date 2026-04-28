@@ -153,7 +153,7 @@ Full doc: [scripts/piano/README.md](scripts/piano/README.md).
 ## Tests
 
 ```bash
-python -m pytest tests/ -v   # 367 tests passing
+python -m pytest tests/ -v   # 489 tests passing
 ```
 
 ---

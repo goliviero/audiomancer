@@ -1,5 +1,7 @@
 """V006_ember — Muladhara variant with layered ochre + active mids.
 
+# FROZEN — V006_ember livré en production, ne plus modifier.
+
 Same foundation / didgeridoo / subliminal as V006 but the MID is split
 in two voices that fade independently:
     - ochre_mid  (C-major color) with an "arc" envelope (builds then recedes)

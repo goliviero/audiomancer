@@ -1,5 +1,7 @@
 """V006_ember_v2 — fixes the piercing high sines of V006_ember.
 
+# FROZEN — V006_ember_v2 livré en production, ne plus modifier.
+
 The v1 mix used overtone_whisper micro-events, which generate pure sine
 waves at 5x/7x/9x the fundamental. With Eb4 / C4 in the event chord pool,
 that produced 1300-2800Hz sinusoids that cut through the ambient bed as

@@ -6,10 +6,13 @@
 
 ## DEC-001 — Pure numpy/scipy audio toolkit [ACTIVE]
 
-**Date:** 2026-03-24 (updated 2026-03-27)
-- **Decision:** No DAW features, no MIDI, no AI generation. Minimal Python audio toolkit.
+**Date:** 2026-03-24 (updated 2026-04-28)
+- **Decision:** No DAW features, no AI generation. Minimal Python audio toolkit.
+  Offline MIDI capture/render allowed (post-V005, see `scripts/piano/`).
 - **Why:** Keep scope tight — audiomancer produces stems for Akasha, nothing more.
-- **Impact:** Each module stays under 400 lines. No external audio frameworks.
+- **Impact:** No external audio frameworks. Modules stay focused; soft cap ~500
+  lines (harmony.py 500, spectral.py 463, synth.py 424 — accepted, each is one
+  cohesive concern).
 
 ## DEC-002 — Gated LUFS (pyloudnorm) for ambient target loudness [ACTIVE]
 
@@ -57,7 +60,7 @@
   as params. Optional `breath_cycle_sec`/`breath_depth_db` for anti-fatigue
   on extended listening (off by default). Reusable for any noise-based
   config. Validated via the v1→v7 exploration in
-  `scripts/60_v007_brown_variations.py` … `66_v007_brown_v7.py`.
+  `scripts/_archive/v007/60_v007_brown_variations.py` … `66_v007_brown_v7.py`.
 
 ## DEC-005 — Opt-in loop boundary continuity for aperiodic content [ACTIVE]
 
